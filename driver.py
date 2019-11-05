@@ -22,6 +22,8 @@ def main():
     board = Chess()
     print(board)
     print(board.hash())
+    board.move(('a',1),('a',2))
+    print(board)
 
 if __name__ == "__main__":
     main()

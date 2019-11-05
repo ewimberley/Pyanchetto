@@ -24,8 +24,21 @@ class Chess:
         for col in range(SIZE):
             self.board[row][col] = pieces.index(piece)
 
-    def move(self, move):
-        pass
+    def move(self, from_coord, to_coord):
+        """coordinates are in format (file, rank)"""
+        from_file = self.file_to_index(from_coord[0])
+        from_rank = SIZE - from_coord[1] - 1
+        from_piece = self.board[from_rank][from_file]
+        print("Moving: " + pieces_ascii[from_piece])
+        to_file = self.file_to_index(to_coord[0])
+        to_rank = SIZE - to_coord[1] - 1
+        to_piece = self.board[to_rank][to_file]
+        #TODO check move is valid
+        self.board[to_rank][to_file] = self.board[from_rank][from_file]
+        self.board[from_rank][from_file] = 0
+
+    def file_to_index(self, file):
+        return ord(file) - 97
 
     def __str__(self):
         board_str = ""
