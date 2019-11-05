@@ -1,38 +1,51 @@
 from lark import Lark, Transformer, v_args
 
-l = Lark('''?start: turn*
+#TODO: pawn promotions, draw, draw offered, en passant, knight as "S"?, only move available
+grammar = """
+    start: turn*
 
-            turn: INT "." move move_modifiers? move move_modifiers?
+    turn: INT "." move move 
             
-            move: piece_type captures? coord 
-                | rank captures? coord 
-                | coord 
-                | "0-0"  
-                | "0-0-0" 
+    move: piece_type capture? coord move_modifiers?
+        | rank capture? coord move_modifiers?
+        | coord move_modifiers?
+        | king_side_castle move_modifiers?
+        | queen_side_castle move_modifiers?
+        | queen_side_castle move_modifiers?
+        
+    king_side_castle: "0-0"
+    
+    queen_side_castle: "0-0-0"
+    
+    white_win: "1-0"
+    
+    black_win: "0-1"
             
-            captures: "x"
+    capture: "x"
             
-            move_modifiers: ("+" | "#")? "!"+ "?"+
+    move_modifiers: checks? quality? winning?
+    
+    checks: "+" -> check | "#" -> checkmate
+    
+    quality: ("!" | "?")+
+    
+    winning: "+-" | "+/-" | "+/=" | "=" | "=/+" | "-/+" | "-+"
             
-            piece_type: ("K" | "Q "| "R" | "B" | "N" | "P") -> piece
+    piece_type: "K" -> king | "Q" -> queen | "R" -> rook | "B" -> bishop | "N" -> knight | "P" -> pawn 
             
-            coord: rank | [ rank file ]
+    coord: rank | [ rank file ]
             
-            rank: "a".."h"
+    rank: "a".."h"
                         
-            file: "1".."8"
+    file: "1".."8"
             
-            %import common.INT 
-            %import common.WORD   
-            %import common.WS
-            %ignore WS
-         ''')
+    %import common.INT 
+    %import common.WORD   
+    %import common.WS
+    %ignore WS
+"""
 
-@v_args(inline=True)    # Affects the signatures of the methods
-class Tree(Transformer):
-
-    def __init__(self):
-        self.moves = []
+parser = Lark(grammar)
 
 def parse_notation(move_string):
-   return l.parse(move_string)
+    return parser.parse(move_string)
