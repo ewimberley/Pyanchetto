@@ -1,6 +1,7 @@
 # deepFianchetto
 Deep learning on chess boards.
 
+```
 ♖ ♘ ♗ ♕ ♔ ♗ ♘ ♖ 
 ♙ ♙ ♙ ♙ ♙ ♙ ♙ ♙ 
 . . . . . . . . 
@@ -9,3 +10,4 @@ Deep learning on chess boards.
 . . . . . . . . 
 ♟ ♟ ♟ ♟ ♟ ♟ ♟ ♟ 
 ♜ ♞ ♝ ♛ ♚ ♝ ♞ ♜ 
+```
