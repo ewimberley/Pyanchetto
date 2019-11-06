@@ -55,6 +55,10 @@ class TestCube(unittest.TestCase):
         moves = self.board.valid_king_moves(4, 4)
         assert moves == true_moves
 
+    def test_valid_moves(self):
+        moves = self.board.valid_moves()
+        assert 20 == len(moves)
+
     def test_parse_algebra(self):
         pass
         #moves = "F F B B U U D D L L R R"

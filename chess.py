@@ -10,60 +10,89 @@ decrement = lambda x: x - 1
 nothing = lambda x: x
 
 
+def file_to_index(file):
+    return ord(file) - 97
+
 class Chess:
 
     def __init__(self):
         self.current_player = 1
         self.move_list = []
         self.board = np.zeros((8, 8), dtype=np.int8)
-        self.fill_row(1, "p")
+        self.set_row(1, ["p"] * 8)
         self.set_row(0, [p.lower() for p in home_row])
-        self.fill_row(6, "P")
+        self.set_row(6, ["P"] * 8)
         self.set_row(7, home_row)
-
-    def set_row(self, row, row_pieces):
-        for col in range(SIZE):
-            piece = row_pieces[col]
-            self.board[row][col] = pieces.index(piece)
-
-    def fill_row(self, row, piece):
-        for col in range(SIZE):
-            self.board[row][col] = pieces.index(piece)
 
     def move(self, from_coord, to_coord):
         """coordinates are in format (file, rank)"""
-        from_file = self.file_to_index(from_coord[0])
+        from_file = file_to_index(from_coord[0])
         from_rank = SIZE - from_coord[1] - 1
         from_piece = self.board[from_rank][from_file]
-        print("Moving: " + pieces_ascii[from_piece])
-        to_file = self.file_to_index(to_coord[0])
+        to_file = file_to_index(to_coord[0])
         to_rank = SIZE - to_coord[1] - 1
         to_piece = self.board[to_rank][to_file]
-        # TODO check move is valid
-        self.board[to_rank][to_file] = self.board[from_rank][from_file]
-        self.board[from_rank][from_file] = 0
-
-    def file_to_index(self, file):
-        return ord(file) - 97
+        valid_moves = self.valid_moves()
+        is_valid = False
+        for valid in valid_moves:
+            if valid[0][0] == from_file and valid[0][1] == from_rank:
+                if valid[1][0] == to_file and valid[1][1] == to_rank:
+                    is_valid = True
+        if is_valid:
+            print("Moving: " + pieces_ascii[from_piece])
+            self.board[to_rank][to_file] = self.board[from_rank][from_file]
+            self.board[from_rank][from_file] = 0
+        else:
+            print("Move is invalid")
 
     def valid_moves(self):
+        # TODO king cannot move into check
         moves = []
-        pass
+        pieces = self.get_current_player_pieces()
+        for piece in pieces:
+            piece_moves = self.valid_piece_moves(piece[0], piece[1])
+            for move in piece_moves:
+                moves.append((piece, move))
+        return moves
+
+    def get_current_player_pieces(self):
+        pieces = []
+        for row in range(SIZE):
+            for col in range(SIZE):
+                if self.get_piece_color(col, row) == self.current_player:
+                    pieces.append((col, row))
+        return pieces
+
+    def valid_piece_moves(self, file, rank):
+        type = self.board[rank][file]
+        if type == 1 or type == 7:
+            return self.valid_king_moves(file, rank)
+        elif type == 2 or type == 8:
+            return self.valid_queen_moves(file, rank)
+        elif type == 3 or type == 9:
+            return self.valid_rook_moves(file, rank)
+        elif type == 4 or type == 10:
+            return self.valid_bishop_moves(file, rank)
+        elif type == 5 or type == 11:
+            return self.valid_knight_moves(file, rank)
+        elif type == 6 or type == 12:
+            return self.valid_pawn_moves(file, rank)
 
     def valid_pawn_moves(self, file, rank):
         moves = []
         # TODO en pessant
-        # TODO decide whether to translate back to (a,2) style notation
+        # TODO promotion
         color = self.get_piece_color(file, rank)
+        first_move = (color == 1 and rank == 6) or (color == 2 and rank == 1)
         if color == 1:
             if (rank - 1) > 0 and self.board[rank - 1][file] == 0:
                 moves.append((file, rank - 1))
-                if (rank - 2) > 0 and self.board[rank - 2][file] == 0:
+                if first_move and (rank - 2) > 0 and self.board[rank - 2][file] == 0:
                     moves.append((file, rank - 2))
         elif color == 2:
             if (rank + 1) < SIZE and self.board[rank + 1][file] == 0:
                 moves.append((file, rank + 1))
-                if (rank + 2) < SIZE and self.board[rank + 2][file] == 0:
+                if first_move and (rank + 2) < SIZE and self.board[rank + 2][file] == 0:
                     moves.append((file, rank + 2))
         return moves
 
@@ -131,13 +160,18 @@ class Chess:
         return moves
 
     def valid_adjacent_moves_lambda(self, moves, rank, file, rank_func, file_func):
+        color = self.get_piece_color(file, rank)
         on_rank = rank_func(rank)
         on_file = file_func(file)
-        color = self.get_piece_color(file, rank)
         while on_rank in range(SIZE) and on_file in range(SIZE):
+            move_color = self.get_piece_color(on_file, on_rank)
+            if move_color != 0:
+                if move_color == color:
+                    return
+                else:
+                    moves.append((on_file, on_rank))
+                    return
             moves.append((on_file, on_rank))
-            if self.board[on_rank][on_file] == color:
-                break
             on_rank = rank_func(on_rank)
             on_file = file_func(on_file)
 
@@ -149,6 +183,11 @@ class Chess:
             return 1  # white
         else:
             return 2  # black
+
+    def set_row(self, row, row_pieces):
+        for col in range(SIZE):
+            piece = row_pieces[col]
+            self.board[row][col] = pieces.index(piece)
 
     def __str__(self):
         board_str = ""

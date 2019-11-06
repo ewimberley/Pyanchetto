@@ -22,7 +22,11 @@ def main():
     board = Chess()
     print(board)
     print(board.hash())
+    print(board.valid_moves())
     board.move(('a',1),('a',2))
+    print(board)
+    print(board.valid_moves())
+    board.move(('a',1),('a',5))
     print(board)
 
 if __name__ == "__main__":
