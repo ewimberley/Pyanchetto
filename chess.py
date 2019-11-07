@@ -52,6 +52,7 @@ class Chess:
 
     def valid_moves(self):
         # TODO king cannot move into check
+        # TODO castling
         moves = []
         player_pieces = self.get_current_player_pieces()
         for piece in player_pieces:
@@ -234,5 +235,5 @@ class Chess:
         board_str = ""
         for row in range(SIZE):
             for col in range(SIZE):
-                board_str += pieces[self.board[row][col]]
+                board_str += pieces[self.board[SIZE-row-1][col]]
         return board_str

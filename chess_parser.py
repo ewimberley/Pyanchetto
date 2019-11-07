@@ -4,7 +4,7 @@ from lark import Lark, Transformer, v_args
 grammar = """
     start: turn*
 
-    turn: " "? INT "." " " move " "? move? 
+    turn: " "? INT "." " "? move " "? move? 
             
     move: piece_type capture? coord move_modifiers?
         | rank capture? coord move_modifiers?
@@ -13,9 +13,9 @@ grammar = """
         | queen_side_castle move_modifiers?
         | queen_side_castle move_modifiers?
         
-    king_side_castle: "0-0"
+    king_side_castle: "O-O" | "0-0"
     
-    queen_side_castle: "0-0-0"
+    queen_side_castle: "O-O-O" | "0-0-0"
     
     white_win: "1-0"
     

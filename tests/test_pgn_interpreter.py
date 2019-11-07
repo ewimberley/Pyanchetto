@@ -14,9 +14,20 @@ class TestCube(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_game(self):
-        game = "1. Nc3 f5 2. e4 fxe4 3. Nxe4 Nf6 4. Nxf6+ gxf6 5. Qh5#"
+    def simple_game_test(self, game, correct_hash):
         tree = parse_notation(game)
         #print(tree.pretty())
-        self.interpreter.execute(tree)
+        self.interpreter.execute(tree, False)
+        print(self.board.hash())
+        assert self.board.hash() == correct_hash
+
+    def test_game_simplest(self):
+        game = "1. Nc3 f5 2. e4 fxe4 3. Nxe4 Nf6 4. Nxf6+ gxf6 5. Qh5#"
+        correct_hash = "rnbqkb.rppppp..p.....p.........Q................PPPP.PPPR.B.KBNR"
+        self.simple_game_test(game, correct_hash)
+
+    def test_game_unfinished(self):
+        game = "1.d4 d5 2.c4 e6 3.Nf3 c5 4.cxd5 exd5 5.g3 Nc6 6.Bg2 Nf6 7.O-O Be7 8.Nc3 O-O 9.dxc5 Bxc5 10.Na4 Be7 11.Be3 Re8 12.Rc1 Bg4"
+        correct_hash = ""
+        self.simple_game_test(game, correct_hash)
 

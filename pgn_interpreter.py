@@ -18,15 +18,19 @@ class ChessInterpreter():
         self.turn_number = 0
         self.white_piece = None
         self.black_piece = None
+        self.verbose = False
 
-    def execute(self, tree):
-        print(self.board)
+    def execute(self, tree, verbose):
+        self.verbose = verbose
+        if self.verbose:
+            print(self.board)
         for turn in tree.children:
             self.turn(turn)
 
     def turn(self, tree):
         self.turn_number = int(tree.children[0])
-        print("Turn: " + str(self.turn_number))
+        if self.verbose:
+            print("Turn: " + str(self.turn_number))
         self.move(tree.children[1])
         if len(tree.children) == 3:
             self.move(tree.children[2])
@@ -66,7 +70,8 @@ class ChessInterpreter():
 
         try:
             self.board.move(from_coord, to_coord)
-            print(self.board)
+            if self.verbose:
+                print(self.board)
         except:
             raise Exception("No valid move found with that specification.")
 
