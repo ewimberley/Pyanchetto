@@ -4,7 +4,7 @@ from lark import Lark, Transformer, v_args
 grammar = """
     start: turn*
 
-    turn: INT "." move move 
+    turn: " "? INT "." " " move " "? move? 
             
     move: piece_type capture? coord move_modifiers?
         | rank capture? coord move_modifiers?
@@ -31,9 +31,9 @@ grammar = """
     
     winning: "+-" | "+/-" | "+/=" | "=" | "=/+" | "-/+" | "-+"
             
-    piece_type: "K" -> king | "Q" -> queen | "R" -> rook | "B" -> bishop | "N" -> knight | "P" -> pawn 
+    piece_type: "K" -> k | "Q" -> q | "R" -> r | "B" -> b | "N" -> n | "P" -> p 
             
-    coord: rank | [ rank file ]
+    coord: rank | (rank file)
             
     rank: "a".."h"
                         
@@ -42,7 +42,6 @@ grammar = """
     %import common.INT 
     %import common.WORD   
     %import common.WS
-    %ignore WS
 """
 
 parser = Lark(grammar)
