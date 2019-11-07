@@ -16,7 +16,7 @@ class TestCube(unittest.TestCase):
 
     def test_get_piece_color(self):
         colors = []
-        true_colors = [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        true_colors = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]
         for i in range(8):
             for j in range(8):
                 colors.append(self.board.get_piece_color(j,i))
@@ -58,13 +58,3 @@ class TestCube(unittest.TestCase):
     def test_valid_moves(self):
         moves = self.board.valid_moves()
         assert 20 == len(moves)
-
-    def test_parse_algebra(self):
-        pass
-        #moves = "F F B B U U D D L L R R"
-        #self.cube.parse_moves(moves)
-        ##print(self.cube.hash())
-        #assert self.cube.hash() == "OROROROROGBGBGBGBGWYWYWYWYWBGBGBGBGBYWYWYWYWYROROROROR"
-        #moves = "F' F' B' B' U' U' D' D' L' L' R' R'"
-        #self.cube.parse_moves(moves)
-        #assert self.cube.hash() == SOLVED_HASH
