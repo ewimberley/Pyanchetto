@@ -18,7 +18,6 @@ class Chess:
     def __init__(self):
         self.current_player = 1
         self.move_list = []
-        # TODO colors are reversed
         self.board = np.zeros((8, 8), dtype=np.int8)
         self.set_row(0, home_row)
         self.set_row(1, ["P"] * 8)
@@ -80,20 +79,13 @@ class Chess:
 
     def valid_piece_moves(self, file, rank):
         piece_type = self.board[rank][file]
-        if piece_type == 1 or piece_type == 7:
-            return self.valid_king_moves(file, rank)
-        elif piece_type == 2 or piece_type == 8:
-            return self.valid_queen_moves(file, rank)
-        elif piece_type == 3 or piece_type == 9:
-            return self.valid_rook_moves(file, rank)
-        elif piece_type == 4 or piece_type == 10:
-            return self.valid_bishop_moves(file, rank)
-        elif piece_type == 5 or piece_type == 11:
-            return self.valid_knight_moves(file, rank)
-        elif piece_type == 6 or piece_type == 12:
-            return self.valid_pawn_moves(file, rank)
+        move_funcs = [self.king_moves, self.queen_moves, self.rook_moves, self.bishop_moves, self.knight_moves, self.pawn_moves]
+        if piece_type > 6:
+            piece_type -= 6
+        moves = move_funcs[piece_type-1](file, rank)
+        return moves
 
-    def valid_pawn_moves(self, file, rank):
+    def pawn_moves(self, file, rank):
         moves = []
         # TODO en pessant
         # TODO promotion
@@ -115,84 +107,70 @@ class Chess:
             moves.extend(self.apply_capture_warps(1, file, rank, (file,rank), capture_warps))
         return moves
 
-    def valid_rook_moves(self, file, rank):
+    def rook_moves(self, file, rank):
         moves = self.valid_vertical_moves(file, rank)
         moves.extend(self.valid_horizontal_moves(file, rank))
         return moves
 
-    def valid_bishop_moves(self, file, rank):
-        moves = self.valid_diagonal_moves(file, rank)
-        return moves
+    def bishop_moves(self, file, rank):
+        return self.valid_diagonal_moves(file, rank)
 
-    def valid_knight_moves(self, file, rank):
-        original = (file, rank)
+    def knight_moves(self, file, rank):
         warps = [(2, 1), (2, -1), (-2, 1), (-2, -1), (1, 2), (-1, 2), (1, -2), (-1, -2)]
-        return self.apply_warps(file, rank, original, warps)
+        return self.apply_warps(file, rank, (file, rank), warps)
 
-    def valid_queen_moves(self, file, rank):
+    def queen_moves(self, file, rank):
         moves = self.valid_diagonal_moves(file, rank)
         moves.extend(self.valid_vertical_moves(file, rank))
         moves.extend(self.valid_horizontal_moves(file, rank))
         return moves
 
-    def valid_king_moves(self, file, rank):
-        original = (file, rank)
+    def king_moves(self, file, rank):
         warps = [(1, 1), (-1, -1), (1, -1), (-1, 1), (0, 1), (0, -1), (1, 0), (-1, 0)]
-        return self.apply_warps(file, rank, original, warps)
+        return self.apply_warps(file, rank, (file, rank), warps)
 
     def apply_warps(self, file, rank, original, warps):
         moves = []
-        for warp in warps:
-            after_warp = (original[0] + warp[0], original[1] + warp[1])
-            self.add_if_valid_warp_move(moves, file, rank, after_warp)
-        return moves
-
-    def add_if_valid_warp_move(self, moves, file, rank, new_position):
-        new_file = new_position[0]
-        new_rank = new_position[1]
         color = self.get_piece_color(file, rank)
-        if new_file in range(SIZE) and new_rank in range(SIZE):
-            if self.get_piece_color(new_file, new_rank) != color:
-                moves.append((new_file, new_rank))
+        for warp in warps:
+            new_file = original[0] + warp[0]
+            new_rank = original[1] + warp[1]
+            if new_file in range(SIZE) and new_rank in range(SIZE):
+                if self.get_piece_color(new_file, new_rank) != color:
+                    moves.append((new_file, new_rank))
+        return moves
 
     def apply_capture_warps(self, other_player, file, rank, original, warps):
         moves = []
         for warp in warps:
-            after_warp = (original[0] + warp[0], original[1] + warp[1])
-            self.add_if_valid_capture_warp_move(other_player, moves, file, rank, after_warp)
+            new_file = original[0] + warp[0]
+            new_rank = original[1] + warp[1]
+            if new_file in range(SIZE) and new_rank in range(SIZE):
+                if self.get_piece_color(new_file, new_rank) == other_player:
+                    moves.append((new_file, new_rank))
         return moves
 
-    def add_if_valid_capture_warp_move(self, other_player, moves, file, rank, new_position):
-        new_file = new_position[0]
-        new_rank = new_position[1]
-        if new_file in range(SIZE) and new_rank in range(SIZE):
-            if self.get_piece_color(new_file, new_rank) == other_player:
-                moves.append((new_file, new_rank))
-
     def valid_vertical_moves(self, file, rank):
-        color = self.get_piece_color(file, rank)
         moves = []
-        self.valid_adjacent_moves_lambda(moves, rank, file, increment, nothing)
-        self.valid_adjacent_moves_lambda(moves, rank, file, decrement, nothing)
+        self.valid_moves_lambda(moves, rank, file, increment, nothing)
+        self.valid_moves_lambda(moves, rank, file, decrement, nothing)
         return moves
 
     def valid_horizontal_moves(self, file, rank):
-        color = self.get_piece_color(file, rank)
         moves = []
-        self.valid_adjacent_moves_lambda(moves, rank, file, nothing, increment)
-        self.valid_adjacent_moves_lambda(moves, rank, file, nothing, decrement)
+        self.valid_moves_lambda(moves, rank, file, nothing, increment)
+        self.valid_moves_lambda(moves, rank, file, nothing, decrement)
         return moves
 
     def valid_diagonal_moves(self, file, rank):
-        color = self.get_piece_color(file, rank)
         moves = []
-        self.valid_adjacent_moves_lambda(moves, rank, file, increment, increment)
-        self.valid_adjacent_moves_lambda(moves, rank, file, decrement, decrement)
-        self.valid_adjacent_moves_lambda(moves, rank, file, increment, decrement)
-        self.valid_adjacent_moves_lambda(moves, rank, file, decrement, increment)
+        self.valid_moves_lambda(moves, rank, file, increment, increment)
+        self.valid_moves_lambda(moves, rank, file, decrement, decrement)
+        self.valid_moves_lambda(moves, rank, file, increment, decrement)
+        self.valid_moves_lambda(moves, rank, file, decrement, increment)
         return moves
 
-    def valid_adjacent_moves_lambda(self, moves, rank, file, rank_func, file_func):
+    def valid_moves_lambda(self, moves, rank, file, rank_func, file_func):
         color = self.get_piece_color(file, rank)
         on_rank = rank_func(rank)
         on_file = file_func(file)

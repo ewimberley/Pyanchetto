@@ -17,7 +17,7 @@ class TestCube(unittest.TestCase):
     def simple_game_test(self, game, correct_hash):
         tree = parse_notation(game)
         #print(tree.pretty())
-        self.interpreter.execute(tree, False)
+        self.interpreter.execute(tree, True)
         print(self.board.hash())
         assert self.board.hash() == correct_hash
 
