@@ -8,6 +8,7 @@ rook_positions = [(0, 0), (7, 0), (0, 7), (7, 7)]
 king_positions = [(4, 0), (4, 7)]
 king_castle_end_positions = [(2, 0), (6, 0), (2, 7), (6, 7)]
 rook_castle_end_positions = [(3, 0), (5, 0), (3, 7), (5, 7)]
+all_coords = [(i, j) for i in range(SIZE) for j in range(SIZE)]
 EMPTY = 0
 WHITE = 1
 BLACK = 2
@@ -78,11 +79,17 @@ class Chess:
 
     def get_current_player_pieces(self):
         player_pieces = []
-        for row in range(SIZE):
-            for col in range(SIZE):
-                if self.is_color((col, row), self.current_player):
-                    player_pieces.append((col, row))
+        for coord in all_coords:
+            if self.is_color(coord, self.current_player):
+                player_pieces.append(coord)
         return player_pieces
+
+    def get_pieces_of_type(self, piece_type):
+        pieces_of_type = []
+        for coord in all_coords:
+            if self.get_coord(coord) in (pieces.index(piece_type), pieces.index(piece_type.lower())):
+                pieces_of_type.append(coord)
+        return pieces_of_type
 
     def valid_piece_moves(self, file, rank):
         # TODO promotion
@@ -95,6 +102,14 @@ class Chess:
             piece_type -= 6
         moves = move_funcs[piece_type](file, rank)
         return moves
+
+    def check_check(self, moves):
+        kings = self.get_pieces_of_type("K")
+        for king in kings:
+            for move in moves:
+                if move[1] == king:
+                    return True
+        return False
 
     def pawn_moves(self, file, rank):
         # TODO en pessant
@@ -194,15 +209,22 @@ class Chess:
 
     def __str__(self):
         board_str = ""
-        for row in range(SIZE):
-            for col in range(SIZE):
-                board_str += pieces_ascii[self.get_coord((col, SIZE-row-1))] + " "
-            board_str += "\n"
+        for coord in all_coords:
+            board_str += pieces_ascii[self.get_coord((coord[1], SIZE-coord[0]-1))] + " "
+            board_str += "\n" if coord[1] == 7 else ""
         return board_str
 
     def hash(self):
         board_str = ""
-        for row in range(SIZE):
-            for col in range(SIZE):
-                board_str += pieces[self.get_coord((col, SIZE-row-1))]
+        for coord in all_coords:
+            board_str += pieces[self.get_coord((coord[1], SIZE-coord[0]-1))]
         return board_str
+
+    def clone(self):
+        clone = Chess()
+        clone.current_player = self.current_player
+        clone.move_list = self.move_list
+        clone.board = np.copy(self.board)
+        clone.rooks_moved = np.copy(self.rooks_moved)
+        clone.kings_moved = np.copy(self.kings_moved)
+        return clone
