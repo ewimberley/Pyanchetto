@@ -36,13 +36,26 @@ class ChessInterpreter():
             self.move(tree.children[2])
 
     def move(self, tree):
-        if tree.children[0].data == "rank":
-            self.set_piece("pawn")
+        required_file = -1
+        if tree.children[0].data == "king_side_castle":
+            piece = self.set_piece("k")
+            if self.player == WHITE:
+                to_coord = (6, 0)
+            else:
+                to_coord = (6, 7)
+        elif tree.children[0].data == "queen_side_castle":
+            piece = self.set_piece("k")
+            if self.player == WHITE:
+                to_coord = (2, 0)
+            else:
+                to_coord = (2, 7)
+        elif tree.children[0].data == "file":
+            #TODO if two pawns could make this move, figure out which file is in the notation
+            required_file = file_to_index(self.file(tree.children[0]))
             to_rank_file = self.coord(tree.children[2])
             to_coord = rank_file_to_coord(to_rank_file)
             piece = self.set_piece("p")
         elif tree.children[0].data == "coord":
-            self.set_piece("pawn")
             to_rank_file = self.coord(tree.children[0])
             to_coord = rank_file_to_coord(to_rank_file)
             piece = self.set_piece("p")
@@ -57,6 +70,9 @@ class ChessInterpreter():
         logging.debug("Looking for piece that can move to " + str(to_coord))
         logging.debug("Possible options are: " + str(of_type))
         for piece in of_type:
+            if required_file != -1:
+                if piece[0] != required_file:
+                    continue
             moves = self.board.valid_piece_moves(piece[0], piece[1])
             for move in moves:
                 if move == to_coord:

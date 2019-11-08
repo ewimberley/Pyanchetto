@@ -7,7 +7,7 @@ grammar = """
     turn: " "? INT "." " "? move " "? move? 
             
     move: piece_type capture? coord move_modifiers?
-        | rank capture? coord move_modifiers?
+        | file capture? coord move_modifiers?
         | coord move_modifiers?
         | king_side_castle move_modifiers?
         | queen_side_castle move_modifiers?
@@ -23,25 +23,28 @@ grammar = """
             
     capture: "x"
             
-    move_modifiers: checks? quality? winning?
+    move_modifiers: checks? quality? winning? outcome?
     
     checks: "+" -> check | "#" -> checkmate
     
     quality: ("!" | "?")+
     
     winning: "+-" | "+/-" | "+/=" | "=" | "=/+" | "-/+" | "-+"
+    
+    outcome: "1-0" -> white_win | "1/2-1/2" -> draw | "0-1" -> black_win
             
     piece_type: "K" -> k | "Q" -> q | "R" -> r | "B" -> b | "N" -> n | "P" -> p 
             
-    coord: rank | (rank file)
+    coord: file | (file rank)
             
-    rank: "a".."h"
+    file: "a".."h"
                         
-    file: "1".."8"
+    rank: "1".."8"
             
     %import common.INT 
     %import common.WORD   
     %import common.WS
+    %ignore WS 
 """
 
 parser = Lark(grammar)
