@@ -18,6 +18,11 @@ def decrement(x): return x - 1
 def nothing(x): return x
 def file_to_index(file): return ord(file) - 97
 
+
+class BadMoveException(Exception):
+    pass
+
+
 class Chess:
 
     def __init__(self):
@@ -53,7 +58,7 @@ class Chess:
             else:
                 self.current_player = WHITE
         else:
-            raise Exception("Move is invalid")
+            raise BadMoveException("Move is invalid")
 
     def __move(self, from_coord, to_coord):
         self.set_coord(to_coord, self.get_coord(from_coord))

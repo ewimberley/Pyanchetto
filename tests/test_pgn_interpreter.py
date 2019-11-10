@@ -16,14 +16,15 @@ class TestCube(unittest.TestCase):
 
     def simple_game_test(self, game, correct_hash):
         tree = parse_notation(game)
-        print(tree.pretty())
+        #print(tree.pretty())
         self.interpreter.execute(tree, True)
         #print(self.board.hash())
+        print(self.board)
         assert self.board.hash() == correct_hash
 
     def test_game_file(self):
         tree = parse_file("../examplepgn/1001718.pgn")
-        print(tree.pretty())
+        #print(tree.pretty())
         self.interpreter.execute(tree, True)
         #print(self.board.hash())
         assert self.board.hash() == ""
