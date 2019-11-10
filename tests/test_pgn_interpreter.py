@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 
 from chess import Chess
-from chess_parser import parse_notation
+from chess_parser import parse_notation, parse_file
 from pgn_interpreter import ChessInterpreter
 
 
@@ -16,10 +16,17 @@ class TestCube(unittest.TestCase):
 
     def simple_game_test(self, game, correct_hash):
         tree = parse_notation(game)
-        #print(tree.pretty())
+        print(tree.pretty())
         self.interpreter.execute(tree, True)
         #print(self.board.hash())
         assert self.board.hash() == correct_hash
+
+    def test_game_file(self):
+        tree = parse_file("../examplepgn/1001718.pgn")
+        print(tree.pretty())
+        self.interpreter.execute(tree, True)
+        #print(self.board.hash())
+        assert self.board.hash() == ""
 
     def test_game_simplest(self):
         game = "1. Nc3 f5 2. e4 fxe4 3. Nxe4 Nf6 4. Nxf6+ gxf6 5. Qh5#"

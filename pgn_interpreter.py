@@ -22,10 +22,14 @@ class ChessInterpreter():
 
     def execute(self, tree, verbose):
         self.verbose = verbose
+        self.pgn(tree.children[0])
+
+    def pgn(self, tree):
         if self.verbose:
             print(self.board)
-        for turn in tree.children:
-            self.turn(turn)
+        for child in tree.children:
+            if child.data == "turn":
+                self.turn(child)
 
     def turn(self, tree):
         self.turn_number = int(tree.children[0])
