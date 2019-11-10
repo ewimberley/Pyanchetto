@@ -4,6 +4,7 @@ SIZE = 8
 pieces = (".", "K", "Q", "R", "B", "N", "P", "k", "q", "r", "b", "n", "p")
 pieces_ascii = (".", "♔", "♕", "♖", "♗", "♘", "♙", "♚", "♛", "♜", "♝", "♞", "♟")
 home_row = ["R", "N", "B", "Q", "K", "B", "N", "R"]
+promotion_candidates = ("Q", "R", "B", "N")
 rook_positions = [(0, 0), (7, 0), (0, 7), (7, 7)]
 king_positions = [(4, 0), (4, 7)]
 king_castle_end_positions = [(2, 0), (6, 0), (2, 7), (6, 7)]
@@ -22,6 +23,9 @@ def file_to_index(file): return ord(file) - 97
 class BadMoveException(Exception):
     pass
 
+
+class BadPromotionException(Exception):
+    pass
 
 class Chess:
 
@@ -42,7 +46,7 @@ class Chess:
 
     def is_color(self, coord, color): return self.get_piece_color(coord[0], coord[1]) == color
 
-    def move(self, from_coord, to_coord):
+    def move(self, from_coord, to_coord, promotion_type=None):
         if (from_coord, to_coord) in self.valid_moves():
             if self.coord_is_type(from_coord, "R") and from_coord in rook_positions:
                 self.rooks_moved[rook_positions.index(from_coord)] = True
@@ -53,6 +57,16 @@ class Chess:
                     self.__move(rook_positions[rook_index], rook_castle_end_positions[rook_index])
             self.__move(from_coord, to_coord)
             self.move_list.append((from_coord, to_coord))
+            if promotion_type is not None:
+                if promotion_type.upper() in promotion_candidates and self.coord_is_type(to_coord, "P"):
+                    if self.current_player == WHITE and to_coord[1] == 7:
+                        self.set_coord(to_coord, pieces.index(promotion_type.upper()))
+                    elif self.current_player == BLACK and to_coord[1] == 0:
+                        self.set_coord(to_coord, pieces.index(promotion_type.lower()))
+                    else:
+                        raise BadPromotionException("Cannot promote from this position")
+                else:
+                    raise BadPromotionException("Invalid promotion")
             if self.current_player == WHITE:
                 self.current_player = BLACK
             else:
@@ -97,7 +111,7 @@ class Chess:
         return pieces_of_type
 
     def valid_piece_moves(self, file, rank):
-        # TODO promotion
+        # TODO include promotion in move tuple?
         # TODO current player cannot make a move that puts their king in check
         # TODO capturing the king is not a valid move
         # TODO detect check and checkmate

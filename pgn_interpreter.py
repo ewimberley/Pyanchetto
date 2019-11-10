@@ -10,6 +10,9 @@ logging.basicConfig(level=logging.DEBUG)
 def rank_file_to_coord(to_rank_file):
     return (file_to_index(to_rank_file[0]), int(to_rank_file[1]) - 1)
 
+def child_index_is_type(tree, index, type):
+    return tree.children[index].data == type
+
 class ChessInterpreter():
 
     def __init__(self, board):
@@ -38,15 +41,24 @@ class ChessInterpreter():
 
     def move(self, tree):
         required_file = -1
+        required_rank = -1
+        promotion = None
         if tree.children[0].data in ("king_side_castle", "queen_side_castle"):
             piece, self.to_coord = self.castle(tree.children[0])
-        elif tree.children[0].data == "file":
+        elif child_index_is_type(tree, 1, "disambiguation"):
+            self.set_piece(tree.children[0].data)
+            required_file, required_rank, self.to_coord = self.disambiguation(tree.children[1])
+        elif child_index_is_type(tree, 0, "file"):
             required_file = file_to_index(self.file(tree.children[0]))
             self.to_coord = self.coord(tree.children[2])
             self.set_piece("p")
-        elif tree.children[0].data == "coord":
+            if child_index_is_type(tree, 1, "promotion"):
+                promotion = tree.children[1].children[0].data
+        elif child_index_is_type(tree, 0, "coord"):
             self.to_coord = self.coord(tree.children[0])
             self.set_piece("p")
+            if child_index_is_type(tree, 1, "promotion"):
+                promotion = tree.children[1].children[0].data
         else:
             self.set_piece(tree.children[0].data)
             if tree.children[1].data == "capture":
@@ -65,7 +77,7 @@ class ChessInterpreter():
                 if move == self.to_coord:
                     from_coord = piece
         try:
-            self.board.move(from_coord, self.to_coord)
+            self.board.move(from_coord, self.to_coord, promotion)
             logging.info("\n" + str(self.board))
         except BadMoveException:
             raise Exception("No valid move found with that specification.")
@@ -80,6 +92,16 @@ class ChessInterpreter():
 
     def file(self, tree):
         return str(tree.children[0])
+
+    def disambiguation(self, tree):
+        required_file = -1
+        required_rank = -1
+        if child_index_is_type(tree, 0, "file"):
+            required_file = file_to_index(self.file(tree.children[0]))
+        elif child_index_is_type(tree, 0, "rank"):
+            required_rank = self.rank(tree.children[0])
+        to_coord = self.coord(tree.children[1])
+        return required_file, required_rank, to_coord
 
     def castle(self, tree):
         piece = self.set_piece("k")

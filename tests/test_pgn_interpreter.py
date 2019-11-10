@@ -21,13 +21,19 @@ class TestCube(unittest.TestCase):
         #print(self.board.hash())
         print(self.board)
         assert self.board.hash() == correct_hash
+    
+    def game_file_test(self, file, correct_hash):
+        tree = parse_file("../examplepgn/" + file)
+        print(tree.pretty())
+        self.interpreter.execute(tree, True)
+        print(self.board.hash())
+        assert self.board.hash() == correct_hash
 
     def test_game_file(self):
-        tree = parse_file("../examplepgn/1001718.pgn")
-        #print(tree.pretty())
-        self.interpreter.execute(tree, True)
-        #print(self.board.hash())
-        assert self.board.hash() == ""
+        self.game_file_test("1000144.pgn", "...............................p.....k.P.......K.......P........")
+
+    def test_game_file2(self):
+        self.game_file_test("1001718.pgn", "....r..........P......K....................k....................")
 
     def test_game_simplest(self):
         game = "1. Nc3 f5 2. e4 fxe4 3. Nxe4 Nf6 4. Nxf6+ gxf6 5. Qh5#"
