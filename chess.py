@@ -67,10 +67,7 @@ class Chess:
                         raise BadPromotionException("Cannot promote from this position")
                 else:
                     raise BadPromotionException("Invalid promotion")
-            if self.current_player == WHITE:
-                self.current_player = BLACK
-            else:
-                self.current_player = WHITE
+            self.current_player = WHITE if self.current_player == BLACK else BLACK
         else:
             raise BadMoveException("Move is invalid")
 
@@ -128,7 +125,6 @@ class Chess:
         return False
 
     def pawn_moves(self, file, rank):
-        # TODO include promotion in move tuple?
         # TODO en pessant
         color = self.get_piece_color(file, rank)
         first_move = (color == WHITE and rank == 1) or (color == BLACK and rank == 6)
@@ -143,11 +139,9 @@ class Chess:
         final_moves = []
         for move in moves:
             if color == WHITE and move[1] == 7:
-                promotion_moves = [(move[0], move[1], promotion) for promotion in promotion_candidates]
-                final_moves.extend(promotion_moves)
+                final_moves.extend([(move[0], move[1], promotion) for promotion in promotion_candidates])
             elif color == BLACK and move[1] == 0:
-                promotion_moves = [(move[0], move[1], promotion.lower()) for promotion in promotion_candidates]
-                final_moves.extend(promotion_moves)
+                final_moves.extend([(move[0], move[1], promotion.lower()) for promotion in promotion_candidates])
             else:
                 final_moves.append(move)
         return final_moves
@@ -227,9 +221,7 @@ class Chess:
     def get_piece_color(self, file, rank):
         if self.board[rank][file] == EMPTY:
             return EMPTY
-        elif self.board[rank][file] < pieces.index("k"):
-            return WHITE
-        return BLACK
+        return WHITE if self.board[rank][file] < pieces.index("k") else BLACK
 
     def __set_row(self, row, row_pieces):
         for col in range(SIZE):
@@ -243,6 +235,7 @@ class Chess:
         return board_str
 
     def hash(self):
+        #TODO add rook and king moved state?
         return "".join([pieces[self.get_coord((coord[1], SIZE-coord[0]-1))] for coord in all_coords])
 
     def clone(self):
