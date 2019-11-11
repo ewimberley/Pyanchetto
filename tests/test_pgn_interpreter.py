@@ -19,14 +19,14 @@ class TestCube(unittest.TestCase):
         #print(tree.pretty())
         self.interpreter.execute(tree, True)
         #print(self.board.hash())
-        print(self.board)
+        #print(self.board)
         assert self.board.hash() == correct_hash
     
     def game_file_test(self, file, correct_hash):
         tree = parse_file("../examplepgn/" + file)
-        print(tree.pretty())
+        #print(tree.pretty())
         self.interpreter.execute(tree, True)
-        print(self.board.hash())
+        #print(self.board.hash())
         assert self.board.hash() == correct_hash
 
     def test_game_file(self):

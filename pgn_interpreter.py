@@ -54,11 +54,15 @@ class ChessInterpreter():
             self.set_piece("p")
             if child_index_is_type(tree, 1, "promotion"):
                 promotion = tree.children[1].children[0].data
+                promotion = promotion.upper() if self.board.current_player == 1 else promotion
+                self.to_coord = (self.to_coord[0], self.to_coord[1], promotion)
         elif child_index_is_type(tree, 0, "coord"):
             self.to_coord = self.coord(tree.children[0])
             self.set_piece("p")
             if child_index_is_type(tree, 1, "promotion"):
                 promotion = tree.children[1].children[0].data
+                promotion = promotion.upper() if self.board.current_player == 1 else promotion
+                self.to_coord = (self.to_coord[0], self.to_coord[1], promotion)
         else:
             self.set_piece(tree.children[0].data)
             if tree.children[1].data == "capture":
@@ -74,10 +78,11 @@ class ChessInterpreter():
                     continue
             moves = self.board.valid_piece_moves(piece[0], piece[1])
             for move in moves:
-                if move == self.to_coord:
+                if move[0] == self.to_coord[0] and move[1] == self.to_coord[1]:
                     from_coord = piece
+                    break
         try:
-            self.board.move(from_coord, self.to_coord, promotion)
+            self.board.move(from_coord, self.to_coord)
             logging.info("\n" + str(self.board))
         except BadMoveException:
             raise Exception("No valid move found with that specification.")

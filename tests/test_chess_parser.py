@@ -10,9 +10,9 @@ class TestCube(unittest.TestCase):
         pass
 
     def parse(self, move):
-        print(move + "\n" + "*"*20)
+        #print(move + "\n" + "*"*20)
         tree = parse_notation(move)
-        print(tree.pretty())
+        #print(tree.pretty())
         return tree
 
     def test_simple(self):

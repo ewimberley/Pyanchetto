@@ -19,10 +19,8 @@ def decrement(x): return x - 1
 def nothing(x): return x
 def file_to_index(file): return ord(file) - 97
 
-
 class BadMoveException(Exception):
     pass
-
 
 class BadPromotionException(Exception):
     pass
@@ -46,8 +44,10 @@ class Chess:
 
     def is_color(self, coord, color): return self.get_piece_color(coord[0], coord[1]) == color
 
-    def move(self, from_coord, to_coord, promotion_type=None):
-        if (from_coord, to_coord) in self.valid_moves():
+    def move(self, from_coord, to_coord):
+        promotion_type = None if len(to_coord) == 2 else to_coord[2]
+        valid_moves = self.valid_moves()
+        if (from_coord, to_coord) in valid_moves:
             if self.coord_is_type(from_coord, "R") and from_coord in rook_positions:
                 self.rooks_moved[rook_positions.index(from_coord)] = True
             elif self.coord_is_type(from_coord, "K") and from_coord in king_positions:
@@ -84,8 +84,7 @@ class Chess:
     def valid_moves(self):
         moves = []
         for piece in self.get_current_player_pieces():
-            piece_moves = self.valid_piece_moves(piece[0], piece[1])
-            for move in piece_moves:
+            for move in self.valid_piece_moves(piece[0], piece[1]):
                 moves.append((piece, move))
         return moves
 
@@ -111,7 +110,6 @@ class Chess:
         return pieces_of_type
 
     def valid_piece_moves(self, file, rank):
-        # TODO include promotion in move tuple?
         # TODO current player cannot make a move that puts their king in check
         # TODO capturing the king is not a valid move
         # TODO detect check and checkmate
@@ -123,14 +121,14 @@ class Chess:
         return moves
 
     def check_check(self, moves):
-        kings = self.get_pieces_of_type("K")
-        for king in kings:
+        for king in self.get_pieces_of_type("K"):
             for move in moves:
                 if move[1] == king:
                     return True
         return False
 
     def pawn_moves(self, file, rank):
+        # TODO include promotion in move tuple?
         # TODO en pessant
         color = self.get_piece_color(file, rank)
         first_move = (color == WHITE and rank == 1) or (color == BLACK and rank == 6)
@@ -140,8 +138,19 @@ class Chess:
         elif color == BLACK:
             warps = [(0, -1), (0, -2)] if first_move and self.is_color((file, rank - 1), EMPTY) else [(0, -1)]
             capture_warps = [(-1, -1), (1, -1)]
-        moves = self.apply_warps([], file, rank, (file, rank), warps, (1, 2))
-        return self.apply_warps(moves, file, rank, (file, rank), capture_warps, (EMPTY, color))
+        moves = self.apply_warps([], file, rank, (file, rank), warps, (WHITE, BLACK))
+        moves = self.apply_warps(moves, file, rank, (file, rank), capture_warps, (EMPTY, color))
+        final_moves = []
+        for move in moves:
+            if color == WHITE and move[1] == 7:
+                promotion_moves = [(move[0], move[1], promotion) for promotion in promotion_candidates]
+                final_moves.extend(promotion_moves)
+            elif color == BLACK and move[1] == 0:
+                promotion_moves = [(move[0], move[1], promotion.lower()) for promotion in promotion_candidates]
+                final_moves.extend(promotion_moves)
+            else:
+                final_moves.append(move)
+        return final_moves
 
     def rook_moves(self, file, rank):
         moves = self.valid_vertical_moves([], file, rank)
@@ -234,10 +243,7 @@ class Chess:
         return board_str
 
     def hash(self):
-        board_str = ""
-        for coord in all_coords:
-            board_str += pieces[self.get_coord((coord[1], SIZE-coord[0]-1))]
-        return board_str
+        return "".join([pieces[self.get_coord((coord[1], SIZE-coord[0]-1))] for coord in all_coords])
 
     def clone(self):
         clone = Chess()
