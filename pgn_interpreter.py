@@ -69,14 +69,14 @@ class ChessInterpreter():
                 self.to_coord = self.coord(tree.children[2])
             else:
                 self.to_coord = self.coord(tree.children[1])
-        of_type = self.board.get_current_player_pieces_of_type(self.piece)
+        of_type = self.board.player_pieces_of_type(self.piece)
         logging.debug("Looking for piece that can move to " + str(self.to_coord))
         logging.debug("Possible options are: " + str(of_type))
         for piece in of_type:
             if required_file != -1:
                 if piece[0] != required_file:
                     continue
-            moves = self.board.valid_piece_moves(piece[0], piece[1])
+            moves = self.board.valid_piece_moves(piece)
             for move in moves:
                 if move[0] == self.to_coord[0] and move[1] == self.to_coord[1]:
                     from_coord = piece
