@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 from chess_parser import parse_notation
 
-class TestCube(unittest.TestCase):
+class TestParser(unittest.TestCase):
     def setUp(self):
         pass
 

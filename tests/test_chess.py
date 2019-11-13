@@ -4,7 +4,7 @@ import numpy as np
 from chess import Chess
 
 
-class TestCube(unittest.TestCase):
+class TestChess(unittest.TestCase):
     def setUp(self):
         self.board = Chess()
 

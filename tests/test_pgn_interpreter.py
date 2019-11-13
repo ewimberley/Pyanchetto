@@ -6,7 +6,7 @@ from chess_parser import parse_notation, parse_file
 from pgn_interpreter import ChessInterpreter
 
 
-class TestCube(unittest.TestCase):
+class TestInterpreter(unittest.TestCase):
     def setUp(self):
         self.board = Chess()
         self.interpreter = ChessInterpreter(self.board)
