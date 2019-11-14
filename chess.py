@@ -23,6 +23,10 @@ def same(x): return x
 def file_to_index(file): return ord(file) - 97
 def in_range(coord): return coord[0] in range(SIZE) and coord[1] in range(SIZE)
 def inverse_color(color): return WHITE if color == BLACK else BLACK
+def map2(func, vals): return [func(val) for val in vals] #map with side effects
+def threatened_str(threatened):
+    piece_arr = [str(threatened[coord[1]][SIZE - coord[0] - 1]) for coord in all_coords]
+    return "".join([" ".join(piece_arr[i*SIZE:i*SIZE+SIZE])+"\n" for i in range(SIZE)])
 
 class BadMoveException(Exception):
     pass
@@ -56,21 +60,19 @@ class Chess:
             return EMPTY
         return WHITE if self.board[coord[1]][coord[0]] < pieces.index("k") else BLACK
 
-    def is_type(self, coord, piece_type):
-        return pieces[self.coord(coord)].lower() == piece_type.lower()
+    def is_type(self, coord, piece_type): return pieces[self.coord(coord)].lower() == piece_type.lower()
 
     def player_pieces_of_type(self, piece_type, player):
         return [coord for coord in self.pieces_of_type(piece_type) if self.is_color(coord, player)]
 
-    def player_pieces(self, player):
-        return [coord for coord in all_coords if self.is_color(coord, player)]
+    def player_pieces(self, player): return [coord for coord in all_coords if self.is_color(coord, player)]
 
     def pieces_of_type(self, piece_type):
         indices = (pieces.index(piece_type), pieces.index(piece_type.lower()))
         return [coord for coord in all_coords if self.coord(coord) in indices]
 
     def valid_moves(self):
-        self.threatened = None
+        self.threatened = None #King's current threats are not thwarted by threats
         self.threatened = self._compute_threatened(self.current_player)
         moves = self.valid_moves_for_player(self.current_player)
         self.threatened = None
@@ -99,11 +101,8 @@ class Chess:
         return threatened
 
     def check_check(self, moves):
-        for king in self.pieces_of_type("K"):
-            for move in moves:
-                if move[1][0] == king[0] and move[1][1] == king[1] and move[1][2]:
-                    return True
-        return False
+        kings = self.pieces_of_type("K")
+        return True in [((move[1][0], move[1][1]) == king and move[1][2]) for king in kings for move in moves]
 
     def move(self, from_coord, to_coord):
         valid = self.valid_moves()
@@ -115,6 +114,7 @@ class Chess:
                 if to_coord in king_castle_end_positions:
                     rook_index = king_castle_end_positions.index(to_coord)
                     self.__move(rook_positions[rook_index], rook_castle_end_positions[rook_index])
+            #TODO add captured pieces to capture list
             self.__move(from_coord, to_coord)
             self.move_list.append((from_coord, to_coord))
             if len(to_coord) == 4:
@@ -141,15 +141,15 @@ class Chess:
 
     def pawn_threats(self, f, r):
         color = self.color((f, r))
-        return self.warps([], (f, r), pawn_capture_warps[color - 1], (color,))
+        return self.__warps([], (f, r), pawn_capture_warps[color - 1], (color,))
 
     def pawn(self, f, r):
         # TODO en pessant
         color = self.color((f, r))
         warps = [[(0, 1), (0, 2)] if r == 1 and self.is_color((f, r + 1), EMPTY) else [(0, 1)]]
         warps.append([(0, -1), (0, -2)] if r == 6 and self.is_color((f, r - 1), EMPTY) else [(0, -1)])
-        moves = self.warps([], (f, r), warps[color - 1], (WHITE, BLACK), False)
-        moves = self.warps(moves, (f, r), pawn_capture_warps[color - 1], (EMPTY, color))
+        moves = self.__warps([], (f, r), warps[color - 1], (WHITE, BLACK), False)
+        moves = self.__warps(moves, (f, r), pawn_capture_warps[color - 1], (EMPTY, color))
         final_moves = []
         for move in moves:
             if color == WHITE and move[1] == 7:
@@ -164,7 +164,7 @@ class Chess:
 
     def bishop(self, f, r): return self.diagonal([], f, r)
 
-    def knight(self, f, r): return self.warps([], (f, r), knight_warps, (self.color((f, r)),))
+    def knight(self, f, r): return self.__warps([], (f, r), knight_warps, (self.color((f, r)),))
 
     def queen(self, f, r): return self.orthogonal(self.diagonal([], f, r), f, r)
 
@@ -176,7 +176,7 @@ class Chess:
                 castle_moves.append((2, r, False))
             if not self.rooks_moved[1 if color == WHITE else 3] and self.positions_clear([(5, r), (6, r)]):
                 castle_moves.append((6, r, False))
-        return self.warps(castle_moves, (f, r), king_warps, (color,))
+        return self.__warps(castle_moves, (f, r), king_warps, (color,))
 
     def positions_clear(self, coords):
         for coord in coords:
@@ -185,44 +185,34 @@ class Chess:
                 return False
         return True
 
-    def warps(self, moves, coord, warps, excluded, threat=True):
-        for warp in warps:
-            new = (coord[0] + warp[0], coord[1] + warp[1], threat)
-            if in_range(new) and self.color(new) not in excluded:
-                moves.append(new)
+    def __warps(self, moves, coord, warps, excluded, threat=True):
+        warps = [(coord[0] + w[0], coord[1] + w[1], threat) for w in warps]
+        moves.extend([w for w in warps if in_range(w) and self.color(w) not in excluded])
         return moves
 
-    def orthogonal(self, moves, f, r):
-        return self.__moves_vectors(moves, f, r, [(inc, same), (dec, same), (same, inc), (same, dec)])
+    def orthogonal(self, moves, f, r): return self.__vectors(moves, f, r, [(inc, same), (dec, same), (same, inc), (same, dec)])
 
-    def diagonal(self, moves, f, r):
-        return self.__moves_vectors(moves, f, r, [(inc, inc), (dec, dec), (inc, dec), (dec, inc)])
+    def diagonal(self, moves, f, r): return self.__vectors(moves, f, r, [(inc, inc), (dec, dec), (inc, dec), (dec, inc)])
 
-    def __moves_vectors(self, moves, f, r, func_list):
-        for func in func_list:
-            self.__moves_vector(moves, f, r, func)
+    def __vectors(self, moves, f, r, funcs_list):
+        map2(lambda funcs: self.__vector(moves, f, r, funcs), [funcs for funcs in funcs_list])
         return moves
 
-    def __moves_vector(self, moves, f, r, func):
+    def __vector(self, moves, f, r, funcs):
         color = self.color((f, r))
-        coord = (func[1](f), func[0](r), True)
+        coord = (funcs[1](f), funcs[0](r), True)
         while in_range(coord) and self.color(coord) in (inverse_color(color), EMPTY):
             moves.append(coord)
             if self.color(coord) == inverse_color(color):
                 break
-            coord = (func[1](coord[0]), func[0](coord[1]), coord[2])
+            coord = (funcs[1](coord[0]), funcs[0](coord[1]), coord[2])
         return moves
 
     def __set_row(self, row, row_pieces):
-        for col in range(SIZE):
-            self.board[row][col] = pieces.index(row_pieces[col])
+        map2(lambda col: self.coord((col, row), pieces.index(row_pieces[col])), [col for col in range(SIZE)])
 
     def __str__(self):
         piece_arr = [pieces_ascii[self.coord((coord[1], SIZE - coord[0] - 1))] for coord in all_coords]
-        return "".join([" ".join(piece_arr[i*SIZE:i*SIZE+SIZE])+"\n" for i in range(SIZE)])
-
-    def threatened_str(self, threatened):
-        piece_arr = [str(threatened[coord[1]][SIZE - coord[0] - 1]) for coord in all_coords]
         return "".join([" ".join(piece_arr[i*SIZE:i*SIZE+SIZE])+"\n" for i in range(SIZE)])
 
     def hash(self):
