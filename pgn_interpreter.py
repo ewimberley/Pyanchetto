@@ -73,6 +73,9 @@ class ChessInterpreter():
             if required_file != -1:
                 if piece[0] != required_file:
                     continue
+            if required_rank != -1:
+                if piece[1] != required_rank:
+                    continue
             moves = self.board.valid_piece_moves(piece)
             for move in moves:
                 if move[0] == self.to_coord[0] and move[1] == self.to_coord[1]:
@@ -83,9 +86,12 @@ class ChessInterpreter():
             self.to_coord = (self.to_coord[0], self.to_coord[1], threaten, self.promotion_type)
         else:
             self.to_coord = (self.to_coord[0], self.to_coord[1], threaten)
-        logging.debug("Player " + str(self.board.current_player) + " moving " + self.piece + " to " + str(self.to_coord))
-        self.board.move(from_coord, self.to_coord)
-        logging.info("\n" + str(self.board))
+        try:
+            logging.debug("Player " + str(self.board.current_player) + " moving " + self.piece + " to " + str(self.to_coord))
+            self.board.move(from_coord, self.to_coord)
+            logging.info("\n" + str(self.board))
+        except Exception:
+            logging.exception("Failed to apply move.")
 
     def coord(self, tree):
         file = self.rank(tree.children[0])
@@ -104,7 +110,7 @@ class ChessInterpreter():
         if child_index_is_type(tree, 0, "file"):
             required_file = file_to_index(self.file(tree.children[0]))
         elif child_index_is_type(tree, 0, "rank"):
-            required_rank = self.rank(tree.children[0])
+            required_rank = int(self.rank(tree.children[0])) - 1
         to_coord = self.coord(tree.children[1])
         return required_file, required_rank, to_coord
 

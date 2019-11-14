@@ -35,6 +35,7 @@ class Chess:
     def __init__(self):
         self.current_player = 1
         self.move_list = []
+        self.threatened = None
         self.board = np.zeros((8, 8), dtype=np.int8)
         self.rooks_moved = np.zeros(4, dtype=np.bool_)
         self.kings_moved = np.zeros(2, dtype=np.bool_)
@@ -95,13 +96,12 @@ class Chess:
         threatened = np.zeros((8, 8), dtype=np.int8)
         for move in opponent_moves:
             threatened[move[1][0]][move[1][1]] += 1 if move[1][2] else 0
-        print(self.threatened_str(threatened))
         return threatened
 
     def check_check(self, moves):
         for king in self.pieces_of_type("K"):
             for move in moves:
-                if move[1] == king:
+                if move[1][0] == king[0] and move[1][1] == king[1] and move[1][2]:
                     return True
         return False
 

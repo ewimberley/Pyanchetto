@@ -81,15 +81,15 @@ class TestChess(unittest.TestCase):
         self.board.board[7][4] = 7
         self.board.board[7][0] = 9
         self.board.board[7][7] = 9
-        true_moves = [(2, 0, True), (6, 0, True), (5, 1, True), (3, 1, True), (4, 1, True), (5, 0, True), (3, 0, True)]
+        true_moves = [(2, 0, False), (6, 0, False), (5, 1, True), (3, 1, True), (4, 1, True), (5, 0, True), (3, 0, True)]
         moves = self.board.king(4, 0)
         assert moves == true_moves
-        true_moves = [(2, 7, True), (6, 7, True), (3, 6, True), (5, 6, True), (4, 6, True), (5, 7, True), (3, 7, True)]
+        true_moves = [(2, 7, False), (6, 7, False), (3, 6, True), (5, 6, True), (4, 6, True), (5, 7, True), (3, 7, True)]
         moves = self.board.king(4, 7)
         assert moves == true_moves
-        self.board.move((4, 0), (2, 0, True))
+        self.board.move((4, 0), (2, 0, False))
         assert self.board.hash() == "r...k..r..................................................KR...R"
-        self.board.move((4, 7), (6, 7, True))
+        self.board.move((4, 7), (6, 7, False))
         assert self.board.hash() == "r....rk...................................................KR...R"
 
     def test_valid_opening_moves(self):
@@ -101,4 +101,6 @@ class TestChess(unittest.TestCase):
         self.board.board[4][4] = 7
         assert not self.board.check_check(self.board.valid_moves())
         self.board.board[2][4] = 2
+        print(self.board)
         assert self.board.check_check(self.board.valid_moves())
+        #TODO check that non-threatening moves do not place king in check
