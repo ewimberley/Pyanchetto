@@ -16,35 +16,39 @@ class TestChess(unittest.TestCase):
 
     def test_get_piece_color(self):
         colors = []
-        true_colors = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]
+        true_colors = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                       2,2]
         for i in range(8):
             for j in range(8):
                 colors.append(self.board.color((j, i)))
         assert colors == true_colors
 
     def test_valid_pawn_moves(self):
-        black_pawn_true_moves = [(0, 2), (0, 3)]
+        black_pawn_true_moves = [(0, 2, False), (0, 3, False)]
         black_pawn_moves = self.board.pawn(0, 1)
         assert black_pawn_moves == black_pawn_true_moves
 
     def test_valid_promotion_moves(self):
         self.board.board.fill(0)
         self.board.board[6][4] = 6
-        white_pawn_true_moves = [(4, 7, 'Q'), (4, 7, 'R'), (4, 7, 'B'), (4, 7, 'N')]
+        white_pawn_true_moves = [(4, 7, False, 'Q'), (4, 7, False, 'R'), (4, 7, False, 'B'), (4, 7, False, 'N')] 
         white_pawn_moves = self.board.pawn(4, 6)
         assert white_pawn_moves == white_pawn_true_moves
 
     def test_valid_rook_moves(self):
         self.board.board.fill(0)
         self.board.board[4][4] = 3
+        true_moves = [(4, 5, True), (4, 6, True), (4, 7, True), (4, 3, True), (4, 2, True), (4, 1, True), (4, 0, True),
+                      (5, 4, True), (6, 4, True), (7, 4, True), (3, 4, True), (2, 4, True), (1, 4, True), (0, 4, True)]
         moves = self.board.rook(4, 4)
-        true_moves = [(4,5),(4,6),(4,7),(4,3),(4,2),(4,1),(4,0),(5,4),(6,4),(7,4),(3,4),(2,4),(1,4),(0,4)]
         assert moves == true_moves
 
     def test_valid_bishop_moves(self):
         self.board.board.fill(0)
         self.board.board[4][4] = 4
-        true_moves = [(5, 5), (6, 6), (7, 7), (3, 3), (2, 2), (1, 1), (0, 0), (3, 5), (2, 6), (1, 7), (5, 3), (6, 2), (7, 1)]
+        true_moves = [(5, 5, True), (6, 6, True), (7, 7, True), (3, 3, True), (2, 2, True), (1, 1, True),
+                      (0, 0, True), (3, 5, True), (2, 6, True), (1, 7, True), (5, 3, True), (6, 2, True), (7, 1, True)]
         moves = self.board.bishop(4, 4)
         assert moves == true_moves
 
@@ -53,7 +57,10 @@ class TestChess(unittest.TestCase):
     def test_valid_queen_moves(self):
         self.board.board.fill(0)
         self.board.board[4][4] = 2
-        true_moves = [(5, 5), (6, 6), (7, 7), (3, 3), (2, 2), (1, 1), (0, 0), (3, 5), (2, 6), (1, 7), (5, 3), (6, 2), (7, 1), (4, 5), (4, 6), (4, 7), (4, 3), (4, 2), (4, 1), (4, 0), (5, 4), (6, 4), (7, 4), (3, 4), (2, 4), (1, 4), (0, 4)]
+        true_moves = [(5, 5, True), (6, 6, True), (7, 7, True), (3, 3, True), (2, 2, True), (1, 1, True), (0, 0, True),
+                      (3, 5, True), (2, 6, True), (1, 7, True), (5, 3, True), (6, 2, True), (7, 1, True), (4, 5, True),
+                      (4, 6, True), (4, 7, True), (4, 3, True), (4, 2, True), (4, 1, True), (4, 0, True), (5, 4, True),
+                      (6, 4, True), (7, 4, True), (3, 4, True), (2, 4, True), (1, 4, True), (0, 4, True)]
         moves = self.board.queen(4, 4)
         assert moves == true_moves
 
@@ -61,7 +68,8 @@ class TestChess(unittest.TestCase):
         self.board.board.fill(0)
         self.board.board[4][4] = 1
         self.board.kings_moved[0] = True
-        true_moves = [(5, 5), (3, 3), (5, 3), (3, 5), (4, 5), (4, 3), (5, 4), (3, 4)]
+        true_moves = [(5, 5, True), (3, 3, True), (5, 3, True), (3, 5, True), (4, 5, True), (4, 3, True),
+                      (5, 4, True), (3, 4, True)]
         moves = self.board.king(4, 4)
         assert moves == true_moves
 
@@ -73,15 +81,15 @@ class TestChess(unittest.TestCase):
         self.board.board[7][4] = 7
         self.board.board[7][0] = 9
         self.board.board[7][7] = 9
-        true_moves = [(2, 0), (6, 0), (5, 1), (3, 1), (4, 1), (5, 0), (3, 0)]
+        true_moves = [(2, 0, True), (6, 0, True), (5, 1, True), (3, 1, True), (4, 1, True), (5, 0, True), (3, 0, True)]
         moves = self.board.king(4, 0)
         assert moves == true_moves
-        true_moves = [(2, 7), (6, 7), (3, 6), (5, 6), (4, 6), (5, 7), (3, 7)]
+        true_moves = [(2, 7, True), (6, 7, True), (3, 6, True), (5, 6, True), (4, 6, True), (5, 7, True), (3, 7, True)]
         moves = self.board.king(4, 7)
         assert moves == true_moves
-        self.board.move((4, 0), (2, 0))
+        self.board.move((4, 0), (2, 0, True))
         assert self.board.hash() == "r...k..r..................................................KR...R"
-        self.board.move((4, 7), (6, 7))
+        self.board.move((4, 7), (6, 7, True))
         assert self.board.hash() == "r....rk...................................................KR...R"
 
     def test_valid_opening_moves(self):

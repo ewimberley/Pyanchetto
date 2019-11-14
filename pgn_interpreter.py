@@ -42,7 +42,8 @@ class ChessInterpreter():
     def move(self, tree):
         required_file = -1
         required_rank = -1
-        promotion = None
+        threaten = True
+        self.promotion_type = None
         if tree.children[0].data in ("king_side_castle", "queen_side_castle"):
             piece, self.to_coord = self.castle(tree.children[0])
         elif child_index_is_type(tree, 1, "disambiguation"):
@@ -53,23 +54,19 @@ class ChessInterpreter():
             self.to_coord = self.coord(tree.children[2])
             self.set_piece("p")
             if child_index_is_type(tree, 1, "promotion"):
-                promotion = tree.children[1].children[0].data
-                promotion = promotion.upper() if self.board.current_player == 1 else promotion
-                self.to_coord = (self.to_coord[0], self.to_coord[1], promotion)
+                self.promotion(tree)
         elif child_index_is_type(tree, 0, "coord"):
             self.to_coord = self.coord(tree.children[0])
             self.set_piece("p")
             if child_index_is_type(tree, 1, "promotion"):
-                promotion = tree.children[1].children[0].data
-                promotion = promotion.upper() if self.board.current_player == 1 else promotion
-                self.to_coord = (self.to_coord[0], self.to_coord[1], promotion)
+                self.promotion(tree)
         else:
             self.set_piece(tree.children[0].data)
             if tree.children[1].data == "capture":
                 self.to_coord = self.coord(tree.children[2])
             else:
                 self.to_coord = self.coord(tree.children[1])
-        of_type = self.board.player_pieces_of_type(self.piece)
+        of_type = self.board.player_pieces_of_type(self.piece, self.board.current_player)
         logging.debug("Looking for piece that can move to " + str(self.to_coord))
         logging.debug("Possible options are: " + str(of_type))
         for piece in of_type:
@@ -80,12 +77,15 @@ class ChessInterpreter():
             for move in moves:
                 if move[0] == self.to_coord[0] and move[1] == self.to_coord[1]:
                     from_coord = piece
+                    threaten = move[2]
                     break
-        try:
-            self.board.move(from_coord, self.to_coord)
-            logging.info("\n" + str(self.board))
-        except BadMoveException:
-            raise Exception("No valid move found with that specification.")
+        if self.promotion_type is not None:
+            self.to_coord = (self.to_coord[0], self.to_coord[1], threaten, self.promotion_type)
+        else:
+            self.to_coord = (self.to_coord[0], self.to_coord[1], threaten)
+        logging.debug("Player " + str(self.board.current_player) + " moving " + self.piece + " to " + str(self.to_coord))
+        self.board.move(from_coord, self.to_coord)
+        logging.info("\n" + str(self.board))
 
     def coord(self, tree):
         file = self.rank(tree.children[0])
@@ -107,6 +107,11 @@ class ChessInterpreter():
             required_rank = self.rank(tree.children[0])
         to_coord = self.coord(tree.children[1])
         return required_file, required_rank, to_coord
+
+    def promotion(self, tree):
+        promotion = tree.children[1].children[0].data
+        promotion = promotion.upper() if self.board.current_player == 1 else promotion
+        self.promotion_type = promotion
 
     def castle(self, tree):
         piece = self.set_piece("k")
