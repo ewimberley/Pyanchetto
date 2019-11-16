@@ -90,8 +90,9 @@ class ChessInterpreter():
             logging.debug("Player " + str(self.board.current_player) + " moving " + self.piece + " to " + str(self.to_coord))
             self.board.move(from_coord, self.to_coord)
             logging.info("\n" + str(self.board))
-        except Exception:
+        except Exception as e:
             logging.exception("Failed to apply move.")
+            raise e
 
     def coord(self, tree):
         file = self.rank(tree.children[0])
