@@ -108,13 +108,11 @@ class Chess:
         threatened = np.zeros((8, 8), dtype=np.int8)
         opponent_moves = self.valid_moves_for_player(inverse_color(player), False)
         opponent_pawns = self.player_pieces_of_type("P", inverse_color(player))
-        #TODO refactor these two loops
         for pawn in opponent_pawns:
+            if pawn not in opponent_moves:
+                opponent_moves[pawn] = []
             for threat in self.pawn_threats(pawn[0], pawn[1]):
-                threatened[threat[1]][threat[0]] += 1
-                if coord is not None:
-                    if threatened[coord[1]][coord[0]] > max_threats:
-                        return threatened
+                opponent_moves[pawn].append(threat)
         for piece in opponent_moves:
             for move in opponent_moves[piece]:
                 threatened[move[1]][move[0]] += 1 if move[2] else 0
