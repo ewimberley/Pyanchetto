@@ -108,6 +108,7 @@ class TestChess(unittest.TestCase):
         self.board.init_player_pieces()
         assert not self.board.check_check(self.board.current_player)
         self.board.board[2][4] = 8
+        self.board.init_player_pieces()
         print(self.board)
         assert self.board.check_check(self.board.current_player)
         #TODO check that non-threatening moves do not place king in check
