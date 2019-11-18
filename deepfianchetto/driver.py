@@ -1,9 +1,8 @@
-import sys
 import logging
 import argparse
-from chess import Chess
-from pgn_interpreter import ChessInterpreter
-from chess_parser import parse_notation
+from .chess import Chess
+from .pgn_interpreter import ChessInterpreter
+from .chess_parser import parse_notation
 
 ENCODE_IN = 'utf-8'
 

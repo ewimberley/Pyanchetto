@@ -1,9 +1,8 @@
 import unittest
-import numpy as np
 
-from chess import Chess
-from chess_parser import parse_notation, parse_file
-from pgn_interpreter import ChessInterpreter
+from deepfianchetto.chess import Chess
+from deepfianchetto.chess_parser import parse_notation, parse_file
+from deepfianchetto.pgn_interpreter import ChessInterpreter
 
 
 class TestInterpreter(unittest.TestCase):

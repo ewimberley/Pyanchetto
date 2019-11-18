@@ -1,6 +1,5 @@
 import logging
-from lark import Visitor
-from chess import file_to_index, Chess, BadMoveException
+from .chess import file_to_index
 
 WHITE = 1
 BLACK = 2

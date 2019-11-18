@@ -1,6 +1,6 @@
 import unittest
-import numpy as np
-from chess_parser import parse_notation
+
+from deepfianchetto.chess_parser import parse_notation
 
 class TestParser(unittest.TestCase):
     def setUp(self):
