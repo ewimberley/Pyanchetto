@@ -1,5 +1,5 @@
-# deepFianchetto
-Deep learning on chess boards.
+# deep-fianchetto
+A chess engine for deep learning experimentation.
 
 ```
 board = Chess()
