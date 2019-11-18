@@ -42,8 +42,8 @@ class Chess:
         self.move_list = []
         self.threatened = None
         self.board = np.zeros((8, 8), dtype=np.int8)
-        self.rooks_moved = np.zeros(4, dtype=np.bool_)
-        self.kings_moved = np.zeros(2, dtype=np.bool_)
+        self.rooks_moved = [-1, -1, -1, -1]
+        self.kings_moved = [-1, -1]
         self.__set_row(0, home_row)
         self.__set_row(1, ["P"] * 8)
         self.__set_row(6, ["p"] * 8)
@@ -94,14 +94,14 @@ class Chess:
         moves = funcs[piece_type](piece[0], piece[1], threats) if piece_type == 1 else funcs[piece_type](piece[0], piece[1])
         if validate:
             for move in moves: #simulate to prevent moving into check
-                clone = self.clone()
-                clone.move(piece, move, False)
-                if clone.check_check(self.current_player):
-                    moves.remove(move)
-                #self.move(piece, move, False)
-                #if self.check_check(self.current_player):
+                #clone = self.clone()
+                #clone.move(piece, move, False)
+                #if clone.check_check(self.current_player):
                 #    moves.remove(move)
-                #self.__undo_last_move()
+                self.move(piece, move, False)
+                if self.check_check(inverse_color(self.current_player)):
+                    moves.remove(move)
+                self.__undo_last_move()
         return moves
 
     def _compute_threatened(self, player, coord=None, max_threats=1000):
@@ -132,9 +132,11 @@ class Chess:
             valid_moves = self.valid_piece_moves(from_coord, True, threats)
         if not validate or to_coord in valid_moves:
             if self.is_type(from_coord, "R") and from_coord in rook_positions:
-                self.rooks_moved[rook_positions.index(from_coord)] = True
+                #TODO only update this if it isn't -1
+                self.rooks_moved[rook_positions.index(from_coord)] = len(self.move_list)
             elif self.is_type(from_coord, "K") and from_coord in king_positions:
-                self.kings_moved[king_positions.index(from_coord)] = True
+                #TODO only update this if it isn't -1
+                self.kings_moved[king_positions.index(from_coord)] = len(self.move_list)
                 if to_coord in king_castle_end_positions:
                     rook_index = king_castle_end_positions.index(to_coord)
                     self.__move(rook_positions[rook_index], rook_castle_end_positions[rook_index])
@@ -160,10 +162,24 @@ class Chess:
         self.coord(from_coord, EMPTY)
 
     def __undo_last_move(self):
+        #TODO undo rook move from castle
         last_move = self.move_list.pop()
-        self.__move(last_move[1], last_move[0])
-        last_move_index = (len(self.move_list) - 1)
+        last_move_type = self
+        last_move_index = len(self.move_list)
         captured = self.captured_pieces.pop(last_move_index, None)
+        self.current_player = inverse_color(self.current_player)
+        if self.is_type(last_move[1], "K") and last_move[0] in king_positions:
+            if self.kings_moved[king_positions.index(last_move[0])] == last_move_index:
+                self.kings_moved[king_positions.index(last_move[0])] = -1
+                king_pos = (last_move[1][0], last_move[1][1], False)
+                if king_pos in king_castle_end_positions:
+                    rook_index = king_castle_end_positions.index(king_pos)
+                    rook_pos = rook_castle_end_positions[rook_index]
+                    self.__move((rook_pos[0], rook_pos[1]), rook_positions[rook_index])
+        if self.is_type(last_move[1], "R") and last_move[0] in rook_positions:
+            if self.rooks_moved[rook_positions.index(last_move[0])] == last_move_index:
+                self.rooks_moved[rook_positions.index(last_move[0])] = -1
+        self.__move(last_move[1], last_move[0])
         if captured is not None:
             self.coord(captured[1], captured[0])
             self.init_player_pieces() #TODO manually put the captured piece back in the list
@@ -212,10 +228,10 @@ class Chess:
     def king(self, f, r, threats=None):
         color = self.color((f, r))
         castle_moves = []
-        if not self.kings_moved[color - 1]:
-            if not self.rooks_moved[0 if color == WHITE else 2] and self.positions_clear([(1, r), (2, r), (3, r)], threats):
+        if self.kings_moved[color - 1] == -1:
+            if self.rooks_moved[0 if color == WHITE else 2] == -1 and self.positions_clear([(1, r), (2, r), (3, r)], threats):
                 castle_moves.append((2, r, False))
-            if not self.rooks_moved[1 if color == WHITE else 3] and self.positions_clear([(5, r), (6, r)], threats):
+            if self.rooks_moved[1 if color == WHITE else 3] == -1 and self.positions_clear([(5, r), (6, r)], threats):
                 castle_moves.append((6, r, False))
         return self.__warps(castle_moves, (f, r), king_warps, (color,))
 
@@ -261,13 +277,12 @@ class Chess:
         return "".join([pieces[self.coord((coord[1], SIZE - coord[0] - 1))] for coord in all_coords])
 
     def clone(self):
-        #TODO use deepcopy instead?
         clone = Chess()
         clone.current_player = self.current_player
         clone.move_list = copy.deepcopy(self.move_list)
         clone.board = np.copy(self.board)
-        clone.rooks_moved = np.copy(self.rooks_moved)
-        clone.kings_moved = np.copy(self.kings_moved)
+        clone.rooks_moved = copy.deepcopy(self.rooks_moved)
+        clone.kings_moved = copy.deepcopy(self.kings_moved)
         clone.captured_pieces = copy.deepcopy(self.captured_pieces)
         clone.player_pieces_list = copy.deepcopy(self.player_pieces_list)
         return clone

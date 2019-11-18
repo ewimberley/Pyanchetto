@@ -30,7 +30,6 @@ class TestInterpreter(unittest.TestCase):
         assert self.board.hash() == correct_hash
 
     def test_game_file(self):
-        print(os.listdir('.'))
         self.game_file_test("1000144.pgn", "...............................p.....k.P.......K.......P........")
 
     def test_game_file2(self):
