@@ -22,7 +22,7 @@ class TestInterpreter(unittest.TestCase):
         assert self.board.hash() == correct_hash
     
     def game_file_test(self, file, correct_hash):
-        tree = parse_file("../examplepgn/" + file)
+        tree = parse_file("examplepgn/" + file)
         #print(tree.pretty())
         self.interpreter.execute(tree, True)
         print(self.board.hash())
