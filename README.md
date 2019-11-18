@@ -1,4 +1,4 @@
-# deep-fianchetto
+# deepfianchetto
 A chess engine for deep learning experimentation.
 
 ```
