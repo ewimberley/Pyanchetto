@@ -42,6 +42,9 @@ class TestInterpreter(unittest.TestCase):
     def test_game_file3(self):
         self.game_file_test("1001517.pgn", "........p.......k..............K......P......P..................")
 
+    def test_game_file4(self):
+        self.game_file_test("1118824.pgn", "........p.......k..............K......P......P..................")
+
     def test_game_simplest(self):
         game = "1. Nc3 f5 2. e4 fxe4 3. Nxe4 Nf6 4. Nxf6+ gxf6 5. Qh5#"
         correct_hash = "rnbqkb.rppppp..p.....p.........Q................PPPP.PPPR.B.KBNR"

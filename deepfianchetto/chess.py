@@ -87,7 +87,8 @@ class Chess:
         return moves
 
     def valid_moves_for_player(self, player, validate=True, threats=None):
-        return {piece: self.valid_piece_moves(piece, validate) for piece in self.player_pieces(player)}
+        pieces = copy.deepcopy(self.player_pieces(player))
+        return {piece: self.valid_piece_moves(piece, validate, threats) for piece in pieces}
 
     def valid_piece_moves(self, piece, validate=True, threats=None):
         # TODO detect check and checkmate
@@ -97,10 +98,6 @@ class Chess:
         moves = funcs[piece_type](piece[0], piece[1], threats) if piece_type == 1 else funcs[piece_type](piece[0], piece[1])
         if validate:
             for move in moves: #simulate to prevent moving into check
-                #clone = self.clone()
-                #clone.move(piece, move, False)
-                #if clone.check_check(self.current_player):
-                #    moves.remove(move)
                 self.move(piece, move, False)
                 if self.check_check(inverse_color(self.current_player)):
                     moves.remove(move)
