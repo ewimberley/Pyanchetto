@@ -3,13 +3,17 @@ import copy
 
 SIZE = 8
 pieces = (".", "K", "Q", "R", "B", "N", "P", "k", "q", "r", "b", "n", "p")
+pieces_index = {pieces[i]: i for i in range(len(pieces))}
 pieces_ascii = (".", "♔", "♕", "♖", "♗", "♘", "♙", "♚", "♛", "♜", "♝", "♞", "♟")
 home_row = ["R", "N", "B", "Q", "K", "B", "N", "R"]
 promotion_candidates = ("Q", "R", "B", "N")
 rook_positions = [(0, 0), (7, 0), (0, 7), (7, 7)]
+rook_positions_index = {rook_positions[i]: i for i in range(len(rook_positions))}
 king_positions = [(4, 0), (4, 7)]
 king_castle_end_positions = [(2, 0, False), (6, 0, False), (2, 7, False), (6, 7, False)]
+king_castle_end_positions_index = {king_castle_end_positions[i]: i for i in range(len(king_castle_end_positions))}
 rook_castle_end_positions = [(3, 0, False), (5, 0, False), (3, 7, False), (5, 7, False)]
+rook_castle_end_positions_index = {rook_castle_end_positions[i]: i for i in range(len(rook_castle_end_positions))}
 all_coords = [(i, j) for i in range(SIZE) for j in range(SIZE)]
 knight_warps = [(2, 1), (2, -1), (-2, 1), (-2, -1), (1, 2), (-1, 2), (1, -2), (-1, -2)]
 king_warps = [(1, 1), (-1, -1), (1, -1), (-1, 1), (0, 1), (0, -1), (1, 0), (-1, 0)]
@@ -40,7 +44,6 @@ class Chess:
     def __init__(self):
         self.current_player = 1
         self.move_list = []
-        self.threatened = None
         self.board = np.zeros((8, 8), dtype=np.int8)
         self.rooks_moved = [-1, -1, -1, -1]
         self.kings_moved = [-1, -1]
@@ -51,6 +54,7 @@ class Chess:
         self.op_moves = None
         self.init_player_pieces()
         self.captured_pieces = {}
+        self.promoted_pieces = {}
 
     def init_player_pieces(self):
         white = [coord for coord in all_coords if self.is_color(coord, WHITE)]
@@ -67,12 +71,12 @@ class Chess:
     def color(self, coord):
         if self.board[coord[1]][coord[0]] == EMPTY:
             return EMPTY
-        return WHITE if self.board[coord[1]][coord[0]] < pieces.index("k") else BLACK
+        return WHITE if self.board[coord[1]][coord[0]] < 7 else BLACK
 
     def is_type(self, coord, piece_type): return pieces[self.coord(coord)].lower() == piece_type.lower()
 
     def player_pieces_of_type(self, piece_type, player):
-        indices = (pieces.index(piece_type), pieces.index(piece_type.lower()))
+        indices = (pieces_index[piece_type], pieces_index[piece_type.lower()])
         return [coord for coord in self.player_pieces_list[player - 1] if self.coord(coord) in indices]
 
     def player_pieces(self, player): return self.player_pieces_list[player - 1]
@@ -86,7 +90,6 @@ class Chess:
         return {piece: self.valid_piece_moves(piece, validate) for piece in self.player_pieces(player)}
 
     def valid_piece_moves(self, piece, validate=True, threats=None):
-        # TODO current player cannot make a move that puts their king in check
         # TODO detect check and checkmate
         piece_type = self.coord(piece)
         funcs = [lambda: [], self.king, self.queen, self.rook, self.bishop, self.knight, self.pawn]
@@ -132,13 +135,15 @@ class Chess:
             valid_moves = self.valid_piece_moves(from_coord, True, threats)
         if not validate or to_coord in valid_moves:
             if self.is_type(from_coord, "R") and from_coord in rook_positions:
-                #TODO only update this if it isn't -1
-                self.rooks_moved[rook_positions.index(from_coord)] = len(self.move_list)
+                rook_index = rook_positions_index[from_coord]
+                if self.rooks_moved[rook_index] == -1:
+                    self.rooks_moved[rook_index] = len(self.move_list)
             elif self.is_type(from_coord, "K") and from_coord in king_positions:
-                #TODO only update this if it isn't -1
-                self.kings_moved[king_positions.index(from_coord)] = len(self.move_list)
+                king_index = king_positions.index(from_coord)
+                if self.kings_moved[king_index] == -1:
+                    self.kings_moved[king_index] = len(self.move_list)
                 if to_coord in king_castle_end_positions:
-                    rook_index = king_castle_end_positions.index(to_coord)
+                    rook_index = king_castle_end_positions_index[to_coord]
                     self.__move(rook_positions[rook_index], rook_castle_end_positions[rook_index])
             self.__move(from_coord, to_coord)
             self.move_list.append((from_coord, (to_coord[0], to_coord[1])))
@@ -162,23 +167,26 @@ class Chess:
         self.coord(from_coord, EMPTY)
 
     def __undo_last_move(self):
-        #TODO undo rook move from castle
+        #TODO handle en pessant
         last_move = self.move_list.pop()
         last_move_type = self
         last_move_index = len(self.move_list)
         captured = self.captured_pieces.pop(last_move_index, None)
         self.current_player = inverse_color(self.current_player)
-        if self.is_type(last_move[1], "K") and last_move[0] in king_positions:
+        if self.is_type(last_move[1], "R") and last_move[0] in rook_positions:
+            if self.rooks_moved[rook_positions_index[last_move[0]]] == last_move_index:
+                self.rooks_moved[rook_positions_index[last_move[0]]] = -1
+        elif self.is_type(last_move[1], "K") and last_move[0] in king_positions:
             if self.kings_moved[king_positions.index(last_move[0])] == last_move_index:
                 self.kings_moved[king_positions.index(last_move[0])] = -1
                 king_pos = (last_move[1][0], last_move[1][1], False)
-                if king_pos in king_castle_end_positions:
-                    rook_index = king_castle_end_positions.index(king_pos)
+                if king_pos in king_castle_end_positions: #last move was castle
+                    rook_index = king_castle_end_positions_index[king_pos]
                     rook_pos = rook_castle_end_positions[rook_index]
                     self.__move((rook_pos[0], rook_pos[1]), rook_positions[rook_index])
-        if self.is_type(last_move[1], "R") and last_move[0] in rook_positions:
-            if self.rooks_moved[rook_positions.index(last_move[0])] == last_move_index:
-                self.rooks_moved[rook_positions.index(last_move[0])] = -1
+        elif last_move_index in self.promoted_pieces:
+            self.coord(last_move[1], 6 if self.current_player == WHITE else 12)
+            self.promoted_pieces.pop(last_move_index)
         self.__move(last_move[1], last_move[0])
         if captured is not None:
             self.coord(captured[1], captured[0])
@@ -188,11 +196,12 @@ class Chess:
         promotion_type = to_coord[3]
         if promotion_type.upper() in promotion_candidates and self.is_type(to_coord, "P"):
             if self.current_player == WHITE and to_coord[1] == 7:
-                self.coord(to_coord, pieces.index(promotion_type.upper()))
+                self.coord(to_coord, pieces_index[promotion_type.upper()])
             elif self.current_player == BLACK and to_coord[1] == 0:
-                self.coord(to_coord, pieces.index(promotion_type.lower()))
+                self.coord(to_coord, pieces_index[promotion_type.lower()])
             else:
                 raise BadPromotionException("Cannot promote from this position")
+            self.promoted_pieces[len(self.move_list)-1] = (self.coord(to_coord), to_coord)
         else:
             raise BadPromotionException("Invalid promotion")
 
@@ -266,7 +275,7 @@ class Chess:
         return moves
 
     def __set_row(self, row, row_pieces):
-        map2(lambda col: self.coord((col, row), pieces.index(row_pieces[col])), [col for col in range(SIZE)])
+        map2(lambda col: self.coord((col, row), pieces_index[row_pieces[col]]), [col for col in range(SIZE)])
 
     def __str__(self):
         piece_arr = [pieces_ascii[self.coord((coord[1], SIZE - coord[0] - 1))] for coord in all_coords]

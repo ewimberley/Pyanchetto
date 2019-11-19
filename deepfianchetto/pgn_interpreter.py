@@ -66,8 +66,22 @@ class ChessInterpreter():
             else:
                 self.to_coord = self.coord(tree.children[1])
         of_type = self.board.player_pieces_of_type(self.piece, self.board.current_player)
-        logging.debug("Looking for piece that can move to " + str(self.to_coord))
+        logging.debug("Looking for a " + str(self.piece) + " that can move to " + str(self.to_coord))
         logging.debug("Possible options are: " + str(of_type))
+        from_coord, threaten = self.find_piece_for_move(of_type, required_file, required_rank, threaten)
+        if self.promotion_type is not None:
+            self.to_coord = (self.to_coord[0], self.to_coord[1], threaten, self.promotion_type)
+        else:
+            self.to_coord = (self.to_coord[0], self.to_coord[1], threaten)
+        try:
+            logging.debug("Player " + str(self.board.current_player) + " moving " + self.piece + " to " + str(self.to_coord))
+            self.board.move(from_coord, self.to_coord)
+            logging.info("\n" + str(self.board))
+        except Exception as e:
+            logging.exception("Failed to apply move.")
+            raise e
+
+    def find_piece_for_move(self, of_type, required_file, required_rank, threaten):
         for piece in of_type:
             if required_file != -1:
                 if piece[0] != required_file:
@@ -80,18 +94,8 @@ class ChessInterpreter():
                 if move[0] == self.to_coord[0] and move[1] == self.to_coord[1]:
                     from_coord = piece
                     threaten = move[2]
-                    break
-        if self.promotion_type is not None:
-            self.to_coord = (self.to_coord[0], self.to_coord[1], threaten, self.promotion_type)
-        else:
-            self.to_coord = (self.to_coord[0], self.to_coord[1], threaten)
-        try:
-            logging.debug("Player " + str(self.board.current_player) + " moving " + self.piece + " to " + str(self.to_coord))
-            self.board.move(from_coord, self.to_coord)
-            logging.info("\n" + str(self.board))
-        except Exception as e:
-            logging.exception("Failed to apply move.")
-            raise e
+                    return from_coord, threaten
+        return None, None
 
     def coord(self, tree):
         file = self.rank(tree.children[0])
