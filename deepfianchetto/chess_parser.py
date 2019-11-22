@@ -11,8 +11,7 @@ grammar = """
 
     turn: " "? INT "." " "? move " "? move? 
             
-    move: piece_type capture? coord move_modifiers?
-        | piece_type capture? disambiguation move_modifiers?
+    move: piece_type disambiguation? capture? coord move_modifiers?
         | file capture? coord move_modifiers?
         | coord promotion? move_modifiers?
         | king_side_castle move_modifiers?
@@ -21,12 +20,12 @@ grammar = """
     
     piece_type: "K" -> k | "Q" -> q | "R" -> r | "B" -> b | "N" -> n | "P" -> p 
     
-    disambiguation: (file | rank) coord
+    disambiguation: file | rank 
             
     coord: file rank
             
     file: "a".."h"
-                        
+                         
     rank: "1".."8"
                 
     king_side_castle: "O-O" | "0-0"

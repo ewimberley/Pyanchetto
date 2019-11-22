@@ -28,7 +28,7 @@ class TestInterpreter(unittest.TestCase):
         else:
             example_path = "../examplepgn/"
         tree = parse_file(example_path + file)
-        #print(tree.pretty())
+        print(tree.pretty())
         self.interpreter.execute(tree, True)
         print(self.board.hash())
         assert self.board.hash() == correct_hash
@@ -43,7 +43,10 @@ class TestInterpreter(unittest.TestCase):
         self.game_file_test("1001517.pgn", "........p.......k..............K......P......P..................")
 
     def test_game_file4(self):
-        self.game_file_test("1118824.pgn", "........p.......k..............K......P......P..................")
+        self.game_file_test("1118824.pgn", ".........r...........R......pP......P....pkP.K..................")
+
+    def test_game_file5(self):
+        self.game_file_test("1169775.pgn", "r.b.r.k..p...pppp....n..........P..p........PB.P.PQ..PPbR..RBKNq")
 
     def test_game_simplest(self):
         game = "1. Nc3 f5 2. e4 fxe4 3. Nxe4 Nf6 4. Nxf6+ gxf6 5. Qh5#"

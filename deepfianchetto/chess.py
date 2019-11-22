@@ -145,7 +145,7 @@ class Chess:
             self.__move(from_coord, to_coord)
             self.move_list.append((from_coord, (to_coord[0], to_coord[1])))
             if len(to_coord) == 4:
-                self.__handle_promotion(to_coord)
+                self.__handle_special(from_coord, to_coord)
             self.current_player = inverse_color(self.current_player)
             self.op_moves = None
         else:
@@ -164,7 +164,6 @@ class Chess:
         self.coord(from_coord, EMPTY)
 
     def __undo_last_move(self):
-        #TODO handle en pessant
         last_move = self.move_list.pop()
         last_move_type = self
         last_move_index = len(self.move_list)
@@ -187,27 +186,33 @@ class Chess:
         self.__move(last_move[1], last_move[0])
         if captured is not None:
             self.coord(captured[1], captured[0])
-            self.init_player_pieces() #TODO manually put the captured piece back in the list
+            self.player_pieces_list[self.color(captured[1]) - 1].append(captured[1])
 
-    def __handle_promotion(self, to_coord):
-        promotion_type = to_coord[3]
-        if promotion_type.upper() in promotion_candidates and self.is_type(to_coord, "P"):
-            if self.current_player == WHITE and to_coord[1] == 7:
-                self.coord(to_coord, pieces_index[promotion_type.upper()])
-            elif self.current_player == BLACK and to_coord[1] == 0:
-                self.coord(to_coord, pieces_index[promotion_type.lower()])
-            else:
-                raise BadPromotionException("Cannot promote from this position")
-            self.promoted_pieces[len(self.move_list)-1] = (self.coord(to_coord), to_coord)
+    def __handle_special(self, from_coord, to_coord):
+        if to_coord[3] == 6 or to_coord[3] == 12:
+            captured = (to_coord[0], from_coord[1])
+            captured_color = self.color(captured)
+            self.captured_pieces[len(self.move_list) - 1] = (self.coord(captured), captured)
+            self.coord(captured, EMPTY)
+            self.player_pieces_list[captured_color - 1].remove(captured)
         else:
-            raise BadPromotionException("Invalid promotion")
+            promotion_type = to_coord[3]
+            if promotion_type.upper() in promotion_candidates and self.is_type(to_coord, "P"):
+                if self.current_player == WHITE and to_coord[1] == 7:
+                    self.coord(to_coord, pieces_index[promotion_type.upper()])
+                elif self.current_player == BLACK and to_coord[1] == 0:
+                    self.coord(to_coord, pieces_index[promotion_type.lower()])
+                else:
+                    raise BadPromotionException("Cannot promote from this position")
+                self.promoted_pieces[len(self.move_list)-1] = (self.coord(to_coord), to_coord)
+            else:
+                raise BadPromotionException("Invalid promotion")
 
     def pawn_threats(self, f, r):
         color = self.color((f, r))
         return self.__warps([], (f, r), pawn_capture_warps[color - 1], (color,))
 
     def pawn(self, f, r):
-        # TODO en pessant
         color = self.color((f, r))
         warps = [[(0, 1), (0, 2)] if r == 1 and self.is_color((f, r + 1), EMPTY) else [(0, 1)]]
         warps.append([(0, -1), (0, -2)] if r == 6 and self.is_color((f, r - 1), EMPTY) else [(0, -1)])
@@ -221,6 +226,11 @@ class Chess:
                 final_moves.extend([(move[0], move[1], move[2], promotion.lower()) for promotion in promotion_candidates])
             else:
                 final_moves.append(move)
+        if len(self.move_list) > 0:
+            last_move = self.move_list[-1]
+            if self.is_type(last_move[1], "P") and self.is_color(last_move[1], inverse_color(color)):
+                if abs(last_move[1][1] - last_move[0][1]) == 2 and abs(last_move[0][0] - f) == 1 and last_move[1][1] == r:
+                    final_moves.append((last_move[0][0], r + 1, False, self.coord((f, r))))
         return final_moves
 
     def rook(self, f, r): return self.orthogonal([], f, r)
