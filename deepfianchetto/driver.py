@@ -1,8 +1,8 @@
 import logging
 import argparse
-from .chess import Chess
-from .pgn_interpreter import ChessInterpreter
-from .chess_parser import parse_notation
+from deepfianchetto.chess import Chess
+from deepfianchetto.pgn_interpreter import ChessInterpreter
+from deepfianchetto.chess_parser import parse_notation
 
 ENCODE_IN = 'utf-8'
 

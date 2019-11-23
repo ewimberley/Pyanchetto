@@ -1,4 +1,5 @@
 import numpy as np
+import functools
 import copy
 
 SIZE = 8
@@ -28,6 +29,7 @@ def inc(x): return x + 1
 def dec(x): return x - 1
 def same(x): return x
 def file_to_index(file): return ord(file) - 97
+@functools.lru_cache(maxsize=64)
 def in_range(coord): return coord[0] in range(SIZE) and coord[1] in range(SIZE)
 def inverse_color(color): return WHITE if color == BLACK else BLACK
 def map2(func, vals): return [func(val) for val in vals] #map with side effects
@@ -51,6 +53,7 @@ class Chess:
             self.rooks_moved = copy.deepcopy(other.rooks_moved)
             self.kings_moved = copy.deepcopy(other.kings_moved)
             self.captured_pieces = copy.deepcopy(other.captured_pieces)
+            self.promoted_pieces = copy.deepcopy(other.promoted_pieces)
             self.player_pieces_list = copy.deepcopy(other.player_pieces_list)
         else:
             self.current_player = 1
@@ -65,7 +68,6 @@ class Chess:
             self.init_player_pieces()
             self.captured_pieces = {}
             self.promoted_pieces = {}
-        self.funcs = [lambda: [], self.king, self.queen, self.rook, self.bishop, self.knight, self.pawn]
 
     def init_player_pieces(self):
         self.player_pieces_list =[{c for c in all_coords if self.is_color(c, color)} for color in (WHITE, BLACK)]
@@ -105,7 +107,8 @@ class Chess:
         # TODO detect check and checkmate
         p_type = self.coord(p)
         p_type = p_type - 6 if p_type > 6 else p_type
-        moves = self.funcs[p_type](p[0], p[1], threats) if p_type == 1 else self.funcs[p_type](p[0], p[1])
+        funcs = [lambda: [], self.king, self.queen, self.rook, self.bishop, self.knight, self.pawn]
+        moves = funcs[p_type](p[0], p[1], threats) if p_type == 1 else funcs[p_type](p[0], p[1])
         if validate:
             player = self.current_player
             for move in moves: #simulate to prevent moving into check
@@ -124,7 +127,7 @@ class Chess:
         for move in self._compute_threats(player):
             if move[2]:
                 threatened[move[1]][move[0]] += 1
-                if coord is not None:
+                if coord == move:
                     if threatened[coord[1]][coord[0]] > max_threats:
                         return threatened
         return threatened

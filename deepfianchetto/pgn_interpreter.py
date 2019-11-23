@@ -1,5 +1,5 @@
 import logging
-from .chess import file_to_index
+from deepfianchetto.chess import file_to_index
 
 WHITE = 1
 BLACK = 2
