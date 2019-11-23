@@ -65,7 +65,6 @@ class Chess:
             self.init_player_pieces()
             self.captured_pieces = {}
             self.promoted_pieces = {}
-            self.threat_matrix_history = {}
         self.funcs = [lambda: [], self.king, self.queen, self.rook, self.bishop, self.knight, self.pawn]
 
     def init_player_pieces(self):
@@ -146,7 +145,7 @@ class Chess:
 
     def move(self, from_coord, to_coord, validate=True):
         if validate:
-            threats = self.compute_threat_matrix(self.current_player)
+            threats = self.compute_threat_matrix(self.current_player) if self.is_type(from_coord, "K") else None
             valid_moves = self.valid_piece_moves(from_coord, True, threats)
         if not validate or to_coord in valid_moves:
             if self.is_type(from_coord, "R") and from_coord in rook_positions_index:
