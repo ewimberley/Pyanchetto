@@ -65,6 +65,7 @@ class Chess:
             self.init_player_pieces()
             self.captured_pieces = {}
             self.promoted_pieces = {}
+            self.threat_matrix_history = {}
         self.funcs = [lambda: [], self.king, self.queen, self.rook, self.bishop, self.knight, self.pawn]
 
     def init_player_pieces(self):
@@ -107,9 +108,10 @@ class Chess:
         p_type = p_type - 6 if p_type > 6 else p_type
         moves = self.funcs[p_type](p[0], p[1], threats) if p_type == 1 else self.funcs[p_type](p[0], p[1])
         if validate:
+            player = self.current_player
             for move in moves: #simulate to prevent moving into check
                 self.move(p, move, False)
-                if not self.check_check(inverse_color(self.current_player)):
+                if not self.check_check(player):
                     self.__undo_last_move()
                     yield move
                 else:
@@ -121,25 +123,26 @@ class Chess:
     def compute_threat_matrix(self, player, coord=None, max_threats=1000):
         threatened = np.zeros((8, 8), dtype=np.int8)
         for move in self._compute_threats(player):
-            threatened[move[1]][move[0]] += 1 if move[2] else 0
-            if coord is not None:
-                if threatened[coord[1]][coord[0]] > max_threats:
-                    return threatened
+            if move[2]:
+                threatened[move[1]][move[0]] += 1
+                if coord is not None:
+                    if threatened[coord[1]][coord[0]] > max_threats:
+                        return threatened
         return threatened
 
     def _compute_threats(self, player):
         pieces = copy.deepcopy(self.player_pieces(inverse_color(player)))
         for piece in pieces:
             for move in self.valid_piece_moves(piece, False):
-                yield move
+                if move[2]:
+                    yield move
         for pawn in self.player_pieces_of_type("P", inverse_color(player)):
             for threat in self.pawn_threats(pawn[0], pawn[1]):
                 yield threat
 
     def check_check(self, player):
         king = list(self.player_pieces_of_type("K", player))
-        threatened = self.compute_threat_matrix(player, king[0], 0) #stop check if king has any threats
-        return threatened[king[0][1]][king[0][0]] > 0
+        return (king[0][0], king[0][1], True) in self._compute_threats(player)
 
     def move(self, from_coord, to_coord, validate=True):
         if validate:
@@ -224,15 +227,15 @@ class Chess:
 
     def pawn_threats(self, f, r):
         color = self.color((f, r))
-        return self.__warps([], (f, r), pawn_capture_warps[color - 1], (color,))
+        for threat in self.__warps([], (f, r), pawn_capture_warps[color - 1], (color,)):
+            yield threat
 
     def pawn(self, f, r):
         color = self.color((f, r))
         warps = [[(0, 1), (0, 2)] if r == 1 and self.is_color((f, r + 1), EMPTY) else [(0, 1)]]
         warps.append([(0, -1), (0, -2)] if r == 6 and self.is_color((f, r - 1), EMPTY) else [(0, -1)])
         moves = self.__warps([], (f, r), warps[color - 1], (WHITE, BLACK), False)
-        moves = self.__warps(moves, (f, r), pawn_capture_warps[color - 1], (EMPTY, color))
-        for move in moves:
+        for move in self.__warps(moves, (f, r), pawn_capture_warps[color - 1], (EMPTY, color)):
             if color == WHITE and move[1] == 7:
                 for promotion in promotion_candidates:
                     yield (move[0], move[1], move[2], promotion)
@@ -263,7 +266,8 @@ class Chess:
                 castle_moves.append((2, r, False))
             if self.rooks_moved[1 if color == WHITE else 3] == -1 and self.positions_clear([(5, r), (6, r)], threats):
                 castle_moves.append((6, r, False))
-        return self.__warps(castle_moves, (f, r), king_warps, (color,))
+        for move in self.__warps(castle_moves, (f, r), king_warps, (color,)):
+            yield move
 
     def positions_clear(self, coords, threats=None):
         for coord in coords:
@@ -273,29 +277,33 @@ class Chess:
         return True
 
     def __warps(self, moves, coord, relative_warps, excluded, threat=True):
-        #TODO convert to generator for optimization?
-        warps = [(coord[0] + w[0], coord[1] + w[1], threat) for w in relative_warps]
-        moves.extend([w for w in warps if in_range(w) and self.color(w) not in excluded])
-        return moves
+        for move in moves:
+            yield move
+        for w in relative_warps:
+            warp = (coord[0] + w[0], coord[1] + w[1], threat)
+            if in_range(warp) and self.color(warp) not in excluded:
+                yield warp
 
     def orthogonal(self, moves, f, r): return self.__vectors(moves, f, r, [(inc, same), (dec, same), (same, inc), (same, dec)])
 
     def diagonal(self, moves, f, r): return self.__vectors(moves, f, r, [(inc, inc), (dec, dec), (inc, dec), (dec, inc)])
 
     def __vectors(self, moves, f, r, funcs_list):
-        map2(lambda funcs: self.__vector(moves, f, r, funcs), [funcs for funcs in funcs_list])
-        return moves
+        for move in moves:
+            yield move
+        for funcs in funcs_list:
+            for move in self.__vector(f, r, funcs):
+                yield move
 
-    def __vector(self, moves, f, r, funcs):
+    def __vector(self, f, r, funcs):
         color = self.color((f, r))
         inv_color = inverse_color(color)
         coord = (funcs[1](f), funcs[0](r), True)
         while in_range(coord) and self.color(coord) in (inv_color, EMPTY):
-            moves.append(coord)
+            yield coord
             if self.color(coord) == inv_color:
                 break
             coord = (funcs[1](coord[0]), funcs[0](coord[1]), coord[2])
-        return moves
 
     def __set_row(self, row, row_pieces):
         map2(lambda col: self.coord((col, row), pieces_index[row_pieces[col]]), [col for col in range(SIZE)])

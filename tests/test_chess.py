@@ -39,7 +39,7 @@ class TestChess(unittest.TestCase):
         self.board.board[4][4] = 3
         true_moves = [(4, 5, True), (4, 6, True), (4, 7, True), (4, 3, True), (4, 2, True), (4, 1, True), (4, 0, True),
                       (5, 4, True), (6, 4, True), (7, 4, True), (3, 4, True), (2, 4, True), (1, 4, True), (0, 4, True)]
-        moves = self.board.rook(4, 4)
+        moves = list(self.board.rook(4, 4))
         assert moves == true_moves
 
     def test_valid_bishop_moves(self):
@@ -47,7 +47,7 @@ class TestChess(unittest.TestCase):
         self.board.board[4][4] = 4
         true_moves = [(5, 5, True), (6, 6, True), (7, 7, True), (3, 3, True), (2, 2, True), (1, 1, True),
                       (0, 0, True), (3, 5, True), (2, 6, True), (1, 7, True), (5, 3, True), (6, 2, True), (7, 1, True)]
-        moves = self.board.bishop(4, 4)
+        moves = list(self.board.bishop(4, 4))
         assert moves == true_moves
 
     #TODO test knight moves
@@ -59,7 +59,7 @@ class TestChess(unittest.TestCase):
                       (3, 5, True), (2, 6, True), (1, 7, True), (5, 3, True), (6, 2, True), (7, 1, True), (4, 5, True),
                       (4, 6, True), (4, 7, True), (4, 3, True), (4, 2, True), (4, 1, True), (4, 0, True), (5, 4, True),
                       (6, 4, True), (7, 4, True), (3, 4, True), (2, 4, True), (1, 4, True), (0, 4, True)]
-        moves = self.board.queen(4, 4)
+        moves = list(self.board.queen(4, 4))
         assert moves == true_moves
 
     def test_valid_king_moves(self):
@@ -68,7 +68,7 @@ class TestChess(unittest.TestCase):
         self.board.kings_moved[0] = True
         true_moves = [(5, 5, True), (3, 3, True), (5, 3, True), (3, 5, True), (4, 5, True), (4, 3, True),
                       (5, 4, True), (3, 4, True)]
-        moves = self.board.king(4, 4)
+        moves = list(self.board.king(4, 4))
         assert moves == true_moves
 
     def test_valid_king_moves_castle(self):
@@ -81,10 +81,10 @@ class TestChess(unittest.TestCase):
         self.board.board[7][7] = 9
         self.board.init_player_pieces()
         true_moves = [(2, 0, False), (6, 0, False), (5, 1, True), (3, 1, True), (4, 1, True), (5, 0, True), (3, 0, True)]
-        moves = self.board.king(4, 0)
+        moves = list(self.board.king(4, 0))
         assert moves == true_moves
         true_moves = [(2, 7, False), (6, 7, False), (3, 6, True), (5, 6, True), (4, 6, True), (5, 7, True), (3, 7, True)]
-        moves = self.board.king(4, 7)
+        moves = list(self.board.king(4, 7))
         assert moves == true_moves
         self.board.move((4, 0), (2, 0, False))
         assert self.board.hash() == "r...k..r..................................................KR...R"
