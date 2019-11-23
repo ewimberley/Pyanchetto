@@ -31,7 +31,8 @@ class TestInterpreter(unittest.TestCase):
         #print(tree.pretty())
         #self.interpreter.execute(tree, True)
         self.interpreter.execute(tree, False)
-        #print(self.board.hash())
+        print(self.board.hash())
+        print(self.board)
         assert self.board.hash() == correct_hash
 
     def test_game_file(self):
@@ -48,6 +49,12 @@ class TestInterpreter(unittest.TestCase):
 
     def test_game_file5(self):
         self.game_file_test("1169775.pgn", "r.b.r.k..p...pppp....n..........P..p........PB.P.PQ..PPbR..RBKNq")
+
+    def test_game_file6(self):
+        self.game_file_test("1118829.pgn", "......R..............k........pK.......p...P..rP................")
+
+    def test_game_file7(self):
+        self.game_file_test("1083898.pgn", "..................K.............P.....p....R.r.k.....P..........")
 
     def test_game_simplest(self):
         game = "1. Nc3 f5 2. e4 fxe4 3. Nxe4 Nf6 4. Nxf6+ gxf6 5. Qh5#"
