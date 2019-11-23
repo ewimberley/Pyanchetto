@@ -24,14 +24,14 @@ class TestChess(unittest.TestCase):
 
     def test_valid_pawn_moves(self):
         black_pawn_true_moves = [(0, 2, False), (0, 3, False)]
-        black_pawn_moves = self.board.pawn(0, 1)
+        black_pawn_moves = list(self.board.pawn(0, 1))
         assert black_pawn_moves == black_pawn_true_moves
 
     def test_valid_promotion_moves(self):
         self.board.board.fill(0)
         self.board.board[6][4] = 6
         white_pawn_true_moves = [(4, 7, False, 'Q'), (4, 7, False, 'R'), (4, 7, False, 'B'), (4, 7, False, 'N')] 
-        white_pawn_moves = self.board.pawn(4, 6)
+        white_pawn_moves = list(self.board.pawn(4, 6))
         assert white_pawn_moves == white_pawn_true_moves
 
     def test_valid_rook_moves(self):

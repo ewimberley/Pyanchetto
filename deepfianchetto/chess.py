@@ -2,8 +2,10 @@ import numpy as np
 import copy
 
 SIZE = 8
+piece_types = ("K", "Q", "R", "B", "N", "P")
 pieces = (".", "K", "Q", "R", "B", "N", "P", "k", "q", "r", "b", "n", "p")
 pieces_index = {pieces[i]: i for i in range(len(pieces))}
+pieces_type_map = {p_type: (pieces_index[p_type], pieces_index[p_type.lower()]) for p_type in piece_types}
 pieces_ascii = (".", "♔", "♕", "♖", "♗", "♘", "♙", "♚", "♛", "♜", "♝", "♞", "♟")
 home_row = ["R", "N", "B", "Q", "K", "B", "N", "R"]
 promotion_candidates = ("Q", "R", "B", "N")
@@ -41,25 +43,32 @@ class BadPromotionException(Exception):
 
 class Chess:
 
-    def __init__(self):
-        self.current_player = 1
-        self.move_list = []
-        self.board = np.zeros((8, 8), dtype=np.int8)
-        self.rooks_moved = [-1, -1, -1, -1]
-        self.kings_moved = [-1, -1]
-        self.__set_row(0, home_row)
-        self.__set_row(1, ["P"] * 8)
-        self.__set_row(6, ["p"] * 8)
-        self.__set_row(7, [p.lower() for p in home_row])
-        self.op_moves = None
-        self.init_player_pieces()
-        self.captured_pieces = {}
-        self.promoted_pieces = {}
+    def __init__(self, other=None):
+        if other is not None:
+            self.current_player = other.current_player
+            self.move_list = copy.deepcopy(other.move_list)
+            self.board = np.copy(other.board)
+            self.rooks_moved = copy.deepcopy(other.rooks_moved)
+            self.kings_moved = copy.deepcopy(other.kings_moved)
+            self.captured_pieces = copy.deepcopy(other.captured_pieces)
+            self.player_pieces_list = copy.deepcopy(other.player_pieces_list)
+        else:
+            self.current_player = 1
+            self.move_list = []
+            self.board = np.zeros((8, 8), dtype=np.int8)
+            self.rooks_moved = [-1, -1, -1, -1]
+            self.kings_moved = [-1, -1]
+            self.__set_row(0, home_row)
+            self.__set_row(1, ["P"] * 8)
+            self.__set_row(6, ["p"] * 8)
+            self.__set_row(7, [p.lower() for p in home_row])
+            self.init_player_pieces()
+            self.captured_pieces = {}
+            self.promoted_pieces = {}
+        self.funcs = [lambda: [], self.king, self.queen, self.rook, self.bishop, self.knight, self.pawn]
 
     def init_player_pieces(self):
-        white = [coord for coord in all_coords if self.is_color(coord, WHITE)]
-        black = [coord for coord in all_coords if self.is_color(coord, BLACK)]
-        self.player_pieces_list = [white, black]
+        self.player_pieces_list =[{c for c in all_coords if self.is_color(c, color)} for color in (WHITE, BLACK)]
 
     def coord(self, coord, piece=None):
         if piece is None:
@@ -69,69 +78,75 @@ class Chess:
     def is_color(self, coord, color): return self.color(coord) == color
 
     def color(self, coord):
-        if self.board[coord[1]][coord[0]] == EMPTY:
+        piece_type = self.board[coord[1]][coord[0]]
+        if piece_type == EMPTY:
             return EMPTY
-        return WHITE if self.board[coord[1]][coord[0]] < 7 else BLACK
+        return WHITE if piece_type < 7 else BLACK
 
     def is_type(self, coord, piece_type): return pieces[self.coord(coord)].lower() == piece_type.lower()
 
     def player_pieces_of_type(self, piece_type, player):
-        indices = (pieces_index[piece_type], pieces_index[piece_type.lower()])
-        return [coord for coord in self.player_pieces_list[player - 1] if self.coord(coord) in indices]
+        for coord in self.player_pieces_list[player - 1]:
+            if self.coord(coord) in pieces_type_map[piece_type]:
+                yield coord
 
     def player_pieces(self, player): return self.player_pieces_list[player - 1]
 
     def valid_moves(self):
-        threats = self._compute_threatened(self.current_player)
+        threats = self.compute_threat_matrix(self.current_player)
         moves = self.valid_moves_for_player(self.current_player, True, threats)
         return moves
 
     def valid_moves_for_player(self, player, validate=True, threats=None):
         pieces = copy.deepcopy(self.player_pieces(player))
-        return {piece: self.valid_piece_moves(piece, validate, threats) for piece in pieces}
+        return {piece: list(self.valid_piece_moves(piece, validate, threats)) for piece in pieces}
 
-    def valid_piece_moves(self, piece, validate=True, threats=None):
+    def valid_piece_moves(self, p, validate=True, threats=None):
         # TODO detect check and checkmate
-        piece_type = self.coord(piece)
-        funcs = [lambda: [], self.king, self.queen, self.rook, self.bishop, self.knight, self.pawn]
-        piece_type = piece_type - 6 if piece_type > 6 else piece_type
-        moves = funcs[piece_type](piece[0], piece[1], threats) if piece_type == 1 else funcs[piece_type](piece[0], piece[1])
+        p_type = self.coord(p)
+        p_type = p_type - 6 if p_type > 6 else p_type
+        moves = self.funcs[p_type](p[0], p[1], threats) if p_type == 1 else self.funcs[p_type](p[0], p[1])
         if validate:
             for move in moves: #simulate to prevent moving into check
-                self.move(piece, move, False)
-                if self.check_check(inverse_color(self.current_player)):
-                    moves.remove(move)
-                self.__undo_last_move()
-        return moves
+                self.move(p, move, False)
+                if not self.check_check(inverse_color(self.current_player)):
+                    self.__undo_last_move()
+                    yield move
+                else:
+                    self.__undo_last_move()
+        else:
+            for move in moves:
+                yield move
 
-    def _compute_threatened(self, player, coord=None, max_threats=1000):
+    def compute_threat_matrix(self, player, coord=None, max_threats=1000):
         threatened = np.zeros((8, 8), dtype=np.int8)
-        opponent_moves = self.valid_moves_for_player(inverse_color(player), False)
-        opponent_pawns = self.player_pieces_of_type("P", inverse_color(player))
-        for pawn in opponent_pawns:
-            if pawn not in opponent_moves:
-                opponent_moves[pawn] = []
-            for threat in self.pawn_threats(pawn[0], pawn[1]):
-                opponent_moves[pawn].append(threat)
-        for piece in opponent_moves:
-            for move in opponent_moves[piece]:
-                threatened[move[1]][move[0]] += 1 if move[2] else 0
-                if coord is not None:
-                    if threatened[coord[1]][coord[0]] > max_threats:
-                        return threatened
+        for move in self._compute_threats(player):
+            threatened[move[1]][move[0]] += 1 if move[2] else 0
+            if coord is not None:
+                if threatened[coord[1]][coord[0]] > max_threats:
+                    return threatened
         return threatened
 
+    def _compute_threats(self, player):
+        pieces = copy.deepcopy(self.player_pieces(inverse_color(player)))
+        for piece in pieces:
+            for move in self.valid_piece_moves(piece, False):
+                yield move
+        for pawn in self.player_pieces_of_type("P", inverse_color(player)):
+            for threat in self.pawn_threats(pawn[0], pawn[1]):
+                yield threat
+
     def check_check(self, player):
-        king = self.player_pieces_of_type("K", player)
-        threatened = self._compute_threatened(player, king[0], 0) #stop check if king has any threats
+        king = list(self.player_pieces_of_type("K", player))
+        threatened = self.compute_threat_matrix(player, king[0], 0) #stop check if king has any threats
         return threatened[king[0][1]][king[0][0]] > 0
 
     def move(self, from_coord, to_coord, validate=True):
         if validate:
-            threats = self._compute_threatened(self.current_player)
+            threats = self.compute_threat_matrix(self.current_player)
             valid_moves = self.valid_piece_moves(from_coord, True, threats)
         if not validate or to_coord in valid_moves:
-            if self.is_type(from_coord, "R") and from_coord in rook_positions:
+            if self.is_type(from_coord, "R") and from_coord in rook_positions_index:
                 rook_index = rook_positions_index[from_coord]
                 if self.rooks_moved[rook_index] == -1:
                     self.rooks_moved[rook_index] = len(self.move_list)
@@ -147,7 +162,6 @@ class Chess:
             if len(to_coord) == 4:
                 self.__handle_special(from_coord, to_coord)
             self.current_player = inverse_color(self.current_player)
-            self.op_moves = None
         else:
             raise BadMoveException("Move is invalid")
 
@@ -159,7 +173,7 @@ class Chess:
             self.captured_pieces[len(self.move_list)] = (self.coord(captured), captured)
             self.player_pieces_list[to_color - 1].remove(captured)
         self.player_pieces_list[from_color - 1].remove(from_coord)
-        self.player_pieces_list[from_color - 1].append((to_coord[0], to_coord[1]))
+        self.player_pieces_list[from_color - 1].add((to_coord[0], to_coord[1]))
         self.coord(to_coord, self.coord(from_coord))
         self.coord(from_coord, EMPTY)
 
@@ -186,7 +200,7 @@ class Chess:
         self.__move(last_move[1], last_move[0])
         if captured is not None:
             self.coord(captured[1], captured[0])
-            self.player_pieces_list[self.color(captured[1]) - 1].append(captured[1])
+            self.player_pieces_list[self.color(captured[1]) - 1].add(captured[1])
 
     def __handle_special(self, from_coord, to_coord):
         if to_coord[3] == 6 or to_coord[3] == 12:
@@ -218,20 +232,20 @@ class Chess:
         warps.append([(0, -1), (0, -2)] if r == 6 and self.is_color((f, r - 1), EMPTY) else [(0, -1)])
         moves = self.__warps([], (f, r), warps[color - 1], (WHITE, BLACK), False)
         moves = self.__warps(moves, (f, r), pawn_capture_warps[color - 1], (EMPTY, color))
-        final_moves = []
         for move in moves:
             if color == WHITE and move[1] == 7:
-                final_moves.extend([(move[0], move[1], move[2], promotion) for promotion in promotion_candidates])
+                for promotion in promotion_candidates:
+                    yield (move[0], move[1], move[2], promotion)
             elif color == BLACK and move[1] == 0:
-                final_moves.extend([(move[0], move[1], move[2], promotion.lower()) for promotion in promotion_candidates])
+                for promotion in promotion_candidates:
+                    yield (move[0], move[1], move[2], promotion.lower())
             else:
-                final_moves.append(move)
-        if len(self.move_list) > 0:
+                yield move
+        if len(self.move_list) > 0: #en pessant
             last_move = self.move_list[-1]
             if self.is_type(last_move[1], "P") and self.is_color(last_move[1], inverse_color(color)):
                 if abs(last_move[1][1] - last_move[0][1]) == 2 and abs(last_move[0][0] - f) == 1 and last_move[1][1] == r:
-                    final_moves.append((last_move[0][0], r + 1, False, self.coord((f, r))))
-        return final_moves
+                    yield (last_move[0][0], r + 1, False, self.coord((f, r)))
 
     def rook(self, f, r): return self.orthogonal([], f, r)
 
@@ -258,8 +272,9 @@ class Chess:
                 return False
         return True
 
-    def __warps(self, moves, coord, warps, excluded, threat=True):
-        warps = [(coord[0] + w[0], coord[1] + w[1], threat) for w in warps]
+    def __warps(self, moves, coord, relative_warps, excluded, threat=True):
+        #TODO convert to generator for optimization?
+        warps = [(coord[0] + w[0], coord[1] + w[1], threat) for w in relative_warps]
         moves.extend([w for w in warps if in_range(w) and self.color(w) not in excluded])
         return moves
 
@@ -273,10 +288,11 @@ class Chess:
 
     def __vector(self, moves, f, r, funcs):
         color = self.color((f, r))
+        inv_color = inverse_color(color)
         coord = (funcs[1](f), funcs[0](r), True)
-        while in_range(coord) and self.color(coord) in (inverse_color(color), EMPTY):
+        while in_range(coord) and self.color(coord) in (inv_color, EMPTY):
             moves.append(coord)
-            if self.color(coord) == inverse_color(color):
+            if self.color(coord) == inv_color:
                 break
             coord = (funcs[1](coord[0]), funcs[0](coord[1]), coord[2])
         return moves
@@ -291,14 +307,3 @@ class Chess:
     def hash(self):
         #TODO add rook and king moved state?
         return "".join([pieces[self.coord((coord[1], SIZE - coord[0] - 1))] for coord in all_coords])
-
-    def clone(self):
-        clone = Chess()
-        clone.current_player = self.current_player
-        clone.move_list = copy.deepcopy(self.move_list)
-        clone.board = np.copy(self.board)
-        clone.rooks_moved = copy.deepcopy(self.rooks_moved)
-        clone.kings_moved = copy.deepcopy(self.kings_moved)
-        clone.captured_pieces = copy.deepcopy(self.captured_pieces)
-        clone.player_pieces_list = copy.deepcopy(self.player_pieces_list)
-        return clone

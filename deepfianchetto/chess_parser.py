@@ -1,7 +1,7 @@
 from lark import Lark, Transformer, v_args
 import os
 
-#TODO: pawn promotions, draw, draw offered, en passant, knight as "S"?, only move available
+#TODO: draw, draw offered, en passant, knight as "S"?, only move available
 grammar = """
     start: pgn
     
