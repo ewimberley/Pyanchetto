@@ -1,6 +1,5 @@
 import sys
-from multiprocessing import Pool
-from functools import partial
+from multiprocessing import Process, Queue
 
 from deepfianchetto.chess import Chess
 from deepfianchetto.move_tree import MoveTree
@@ -14,15 +13,40 @@ correct[3] = (8902, 34, 0, 0, 0, 12, 0, 0, 0)
 correct[4] = (197281, 1576, 0, 0, 0, 469, 0, 0, 8)
 correct[5] = (4865609, 82719, 258, 0, 0, 27351, 6, 0, 347)
 
-def perft(root, branch, board, depth, max_depth):
-    if depth > max_depth:
-        return
-    moves = board.valid_moves()
-    branch.add_moves(moves)
-    for child in branch.children:
-        clone = Chess(board)
-        clone.move(child.move[0], child.move[1])
-        perft(root, child, clone, depth + 1, max_depth)
+
+def perft(root, branch, board, depth, max_depth, child_processes=False, queue=None):
+    if depth < max_depth:
+        piece_moves = board.valid_moves()
+        moves = []
+        for piece in piece_moves:
+            for move in piece_moves[piece]:
+                moves.append((piece, move))
+        children = branch.children
+        processes = []
+        queues = []
+        for move in moves:
+            clone = Chess(board)
+            clone.move(move[0], move[1])
+            child = MoveTree(move)
+            branch.children.append(child)
+            if child_processes:
+                q = Queue()
+                p = Process(target=perft, args=(root, child, clone, depth + 1, max_depth, False, q))
+                p.start()
+                processes.append(p)
+                queues.append(q)
+            else:
+                perft(root, child, clone, depth + 1, max_depth, False)
+        for i, p in enumerate(processes):
+            filled_branch = queues[i].get()
+            for child in filled_branch.children:
+                branch.children.append(child)
+            p.join()
+        if queue is not None:
+            queue.put(branch)
+        else:
+            return branch
+
 
 def validate(root, depth, max_depth):
     valid = True
@@ -32,18 +56,20 @@ def validate(root, depth, max_depth):
         valid = False
     return valid
 
+
 def main():
     print("*"*50)
     print("Deep Fianchetto Perft Validator.")
     print("*"*50)
     depth = int(sys.argv[1])
+    threads = 1
 
     board = Chess()
     root = MoveTree("Root")
-    perft(root, root, board, 1, depth)
+    perft(root, root, board, 0, depth, True)
     valid = validate(root, 1, depth)
     print(valid)
-    print(root.prettyPrint())
+    #print(root.prettyPrint())
     print(root.count_nodes())
 
 if __name__ == "__main__":

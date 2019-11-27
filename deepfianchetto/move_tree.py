@@ -5,6 +5,7 @@ class MoveTree(object):
         self.move = move
         self.children = []
         self.heuristic = 0.0
+        self.board = None
 
     def add_moves(self, moves_dict):
         for piece in moves_dict:
