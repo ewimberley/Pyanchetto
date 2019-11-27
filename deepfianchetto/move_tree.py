@@ -19,10 +19,11 @@ class MoveTree(object):
             tree_str += child.prettyPrint(depth + 1)
         return tree_str
 
-    def count_nodes(self):
+    def count_nodes(self, root=True):
         count = len(self.children)
+        count += 1 if root else 0
         for child in self.children:
-            count += child.count_nodes()
+            count += child.count_nodes(False)
         return count
 
     def count_nodes_at_depth(self, depth, at_depth = 0):
