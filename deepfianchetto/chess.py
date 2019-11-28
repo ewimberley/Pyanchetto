@@ -21,9 +21,8 @@ all_coords = [(i, j) for i in range(SIZE) for j in range(SIZE)]
 knight_warps = [(2, 1), (2, -1), (-2, 1), (-2, -1), (1, 2), (-1, 2), (1, -2), (-1, -2)]
 king_warps = [(1, 1), (-1, -1), (1, -1), (-1, 1), (0, 1), (0, -1), (1, 0), (-1, 0)]
 pawn_capture_warps = [[(-1, 1), (1, 1)], [(-1, -1), (1, -1)]]
-EMPTY = 0
-WHITE = 1
-BLACK = 2
+EMPTY, WHITE, BLACK = 0, 1, 2
+PLAY, CHECKMATE, STALEMATE = 0, 1, 2
 
 def inc(x): return x + 1
 def dec(x): return x - 1
@@ -94,6 +93,15 @@ class Chess:
 
     def player_pieces(self, player): return self.player_pieces_list[player - 1]
 
+    def game_state(self):
+        piece_moves = self.valid_moves_for_player(self.current_player, True)
+        moves = []
+        for piece in piece_moves:
+            moves.extend(piece_moves[piece])
+        if len(moves) == 0:
+            return CHECKMATE if self.check_check(self.current_player) else STALEMATE
+        return PLAY
+
     def valid_moves(self):
         threats = self.compute_threat_matrix(self.current_player)
         moves = self.valid_moves_for_player(self.current_player, True, threats)
@@ -142,9 +150,10 @@ class Chess:
             for threat in self.pawn_threats(pawn[0], pawn[1]):
                 yield threat
 
-    def check_check(self, player):
+    def check_check(self, player, threats=None):
+        threats = self._compute_threats(player) if threats is None else threats
         king = list(self.player_pieces_of_type("K", player))
-        return (king[0][0], king[0][1], True) in self._compute_threats(player)
+        return (king[0][0], king[0][1], True) in threats
 
     def move(self, from_coord, to_coord, validate=True):
         if validate:
