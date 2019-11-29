@@ -1,13 +1,10 @@
 import logging
-from deepfianchetto.chess import file_to_index
+from deepfianchetto.chess import rank_file_to_coord, file_to_index
 
 WHITE = 1
 BLACK = 2
 
-logging.basicConfig(level=logging.WARN)
-
-def rank_file_to_coord(to_rank_file):
-    return (file_to_index(to_rank_file[0]), int(to_rank_file[1]) - 1)
+logging.basicConfig(level=logging.DEBUG)
 
 def child_index_is_type(tree, index, type):
     return tree.children[index].data == type

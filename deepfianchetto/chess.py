@@ -1,6 +1,6 @@
 import numpy as np
-import functools
 import copy
+import math
 
 SIZE = 8
 piece_types = ("K", "Q", "R", "B", "N", "P")
@@ -28,7 +28,9 @@ def inc(x): return x + 1
 def dec(x): return x - 1
 def same(x): return x
 def file_to_index(file): return ord(file) - 97
-@functools.lru_cache(maxsize=64)
+def index_to_file(index): chr(index + 97)
+def rank_file_to_coord(to_rank_file): return (file_to_index(to_rank_file[0]), int(to_rank_file[1]) - 1)
+def coord_to_notation(coord): return index_to_file(coord[0]) + str(coord[1])
 def in_range(coord): return coord[0] in range(SIZE) and coord[1] in range(SIZE)
 def inverse_color(color): return WHITE if color == BLACK else BLACK
 def map2(func, vals): return [func(val) for val in vals] #map with side effects
@@ -54,6 +56,8 @@ class Chess:
             self.captured_pieces = copy.deepcopy(other.captured_pieces)
             self.promoted_pieces = copy.deepcopy(other.promoted_pieces)
             self.player_pieces_list = copy.deepcopy(other.player_pieces_list)
+            self.full_move_clock = other.full_move_clock
+            self.half_move_clock = other.half_move_clock
         else:
             self.current_player = 1
             self.move_list = []
@@ -67,6 +71,8 @@ class Chess:
             self.init_player_pieces()
             self.captured_pieces = {}
             self.promoted_pieces = {}
+            self.full_move_clock = 1
+            self.half_move_clock = 0
 
     def init_player_pieces(self):
         self.player_pieces_list =[{c for c in all_coords if self.is_color(c, color)} for color in (WHITE, BLACK)]
@@ -323,6 +329,57 @@ class Chess:
         piece_arr = [pieces_ascii[self.coord((coord[1], SIZE - coord[0] - 1))] for coord in all_coords]
         return "".join([" ".join(piece_arr[i*SIZE:i*SIZE+SIZE])+"\n" for i in range(SIZE)])
 
-    def hash(self):
-        #TODO add rook and king moved state?
-        return "".join([pieces[self.coord((coord[1], SIZE - coord[0] - 1))] for coord in all_coords])
+    def fen(self):
+        #return "".join([pieces[self.coord((coord[1], SIZE - coord[0] - 1))] for coord in all_coords])
+        hash = []
+        for i, coord in enumerate(all_coords):
+            p_type = self.coord((coord[1], SIZE - coord[0] - 1))
+            if i % 8 == 0 and i > 0:
+                hash.append("/")
+            if p_type == EMPTY:
+                if len(hash) > 0 and hash[-1] in ("1", "2", "3", "4", "5", "6", "7", "8"):
+                    hash[-1] = str(int(hash[-1]) + 1)
+                else:
+                    hash.append("1")
+            else:
+                hash.append(pieces[p_type])
+        hash.append(" w " if self.current_player == WHITE else " b ")
+        if self.kings_moved[0] == -1:
+            if self.rooks_moved[0] == -1:
+                hash.append("K")
+            if self.rooks_moved[1] == -1:
+                hash.append("Q")
+        if self.kings_moved[1] == -1:
+            if self.rooks_moved[2] == -1:
+                hash.append("k")
+            if self.rooks_moved[3] == -1:
+                hash.append("q")
+        if self.kings_moved[0] != -1 and self.kings_moved[1] != -1:
+            hash.append("-")
+        if len(self.move_list) > 0:
+            last_move = self.move_list[-1]
+            if self.is_type(last_move[1], "P") and abs(last_move[1][1] - last_move[0][1]) == 2: #en pessant target
+                behind_rank = last_move[1][1] - (-1 if self.current_player == WHITE else 1) #reversed for opponents pawn
+                hash.append(" " + coord_to_notation((last_move[1][0], behind_rank)) + " ")
+            else:
+                hash.append(" - ")
+        else:
+            hash.append(" - ")
+        hash.append(" " + str(self.get_half_move_clock()) + " ")
+        full_moves = math.floor(len(self.move_list) / 2) + 1
+        hash.append(" " + str(full_moves))
+        return "".join(hash)
+
+    def get_half_move_clock(self):
+        move_index = len(self.move_list)
+        if move_index > 0:
+            last_cap_or_pawn = move_index
+            while last_cap_or_pawn:
+                if (last_cap_or_pawn - 1) in self.captured_pieces:
+                    break
+                if self.is_type(self.move_list[last_cap_or_pawn - 2][1], "P"):
+                    break
+                last_cap_or_pawn -= 1
+            return move_index - last_cap_or_pawn
+        else:
+            return 0
