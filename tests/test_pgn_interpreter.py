@@ -36,40 +36,40 @@ class TestInterpreter(unittest.TestCase):
         assert self.board.fen() == correct_hash
 
     def test_game_file(self):
-        self.game_file_test("1000144.pgn", "...............................p.....k.P.......K.......P........")
+        self.game_file_test("1000144.pgn", "8/8/8/7p/5k1P/7K/7P/8 w - - 1 76")
 
     def test_game_file2(self):
-        self.game_file_test("1001718.pgn", "....r..........P......K....................k....................")
+        self.game_file_test("1001718.pgn", "4r3/7P/6K1/8/8/3k4/8/8 b - - 2 62")
 
     def test_game_file3(self):
-        self.game_file_test("1001517.pgn", "........p.......k..............K......P......P..................")
+        self.game_file_test("1001517.pgn", "8/p7/k7/7K/6P1/5P2/8/8 b - - 0 63")
 
     def test_game_file4(self):
-        self.game_file_test("1118824.pgn", ".........r...........R......pP......P....pkP.K..................")
+        self.game_file_test("1118824.pgn", "8/1r6/5R2/4pP2/4P3/1pkP1K2/8/8 w - - 1 62")
 
     def test_game_file5(self):
-        self.game_file_test("1169775.pgn", "r.b.r.k..p...pppp....n..........P..p........PB.P.PQ..PPbR..RBKNq")
+        self.game_file_test("1169775.pgn", "r1b1r1k1/1p3ppp/p4n2/8/P2p4/4PB1P/1PQ2PPb/R2RBKNq w - - 4 22")
 
     def test_game_file6(self):
-        self.game_file_test("1118829.pgn", "......R..............k........pK.......p...P..rP................")
+        self.game_file_test("1118829.pgn", "6R1/8/5k2/6pK/7p/3P2rP/8/8 w - - 13 101")
 
     def test_game_file7(self):
-        self.game_file_test("1083898.pgn", "..................K.............P.....p....R.r.k.....P..........")
+        self.game_file_test("1083898.pgn", "8/8/2K5/8/P5p1/3R1r1k/5P2/8 w - - 7 53")
 
     def test_game_stalemate(self):
-        self.game_file_test("1098027.pgn", "8/8/1K5p/3R2nk/P3B1p1/6P1/8/8 b - -  0  78")
+        self.game_file_test("1098027.pgn", "8/8/1K5p/3R2nk/P3B1p1/6P1/8/8 b - - 0 78")
         assert self.board.game_state() == STALEMATE
 
     def test_game_checkmate(self):
         game = "1. Nc3 f5 2. e4 fxe4 3. Nxe4 Nf6 4. Nxf6+ gxf6 5. Qh5#"
-        correct_hash = "rnbqkb1r/ppppp2p/5p2/7Q/8/8/PPPP1PPP/R1B1KBNR b KQkq -  1  5"
+        correct_hash = "rnbqkb1r/ppppp2p/5p2/7Q/8/8/PPPP1PPP/R1B1KBNR b KQkq - 1 5"
         self.simple_game_test(game, correct_hash)
         assert self.board.game_state() == CHECKMATE
 
     def test_game_unfinished(self):
         game = """1.d4 d5 2.c4 e6 3.Nf3 c5 4.cxd5 exd5 5.g3 Nc6 6.Bg2 Nf6 7.O-O Be7 
             8.Nc3 O-O 9.dxc5 Bxc5 10.Na4 Be7 11.Be3 Re8 12.Rc1 Bg4"""
-        correct_hash = "r2qr1k1/pp2bppp/2n2n2/3p4/N5b1/4BNP1/PP2PPBP/2RQ1RK1 w - -  6  13"
+        correct_hash = "r2qr1k1/pp2bppp/2n2n2/3p4/N5b1/4BNP1/PP2PPBP/2RQ1RK1 w - - 6 13"
         self.simple_game_test(game, correct_hash)
         assert self.board.game_state() == PLAY
 
@@ -82,7 +82,7 @@ class TestInterpreter(unittest.TestCase):
         35. Bb3 Rd4+ 36. Ke1 Bf5 37. h5 Rd3 38. Qb8+ Qf8 39. Qxf8+ Kxf8 40. Bc2 Rh3 41. Bxf5 exf5 
         42. h6 Kg8 43. a4 Rh4 44. Rxf5 Rxa4 45. Kf2 Rg4 46. Kf3 Rg1 47. Kf2 Rg4 48. Kf3 Rg1 
         49. Kf2""" # 1/2-1/2"
-        correct_hash = "6k1/5p2/7P/p4RP1/8/8/5K2/6r1 b - -  9  49"
+        correct_hash = "6k1/5p2/7P/p4RP1/8/8/5K2/6r1 b - - 9 49"
         self.simple_game_test(game, correct_hash)
         assert self.board.game_state() == PLAY
 

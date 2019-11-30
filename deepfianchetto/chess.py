@@ -365,7 +365,7 @@ class Chess:
                 hash.append(" - ")
         else:
             hash.append(" - ")
-        hash.append(" " + str(self.get_half_move_clock()) + " ")
+        hash.append(str(self.get_half_move_clock()))
         full_moves = math.floor(len(self.move_list) / 2) + 1
         hash.append(" " + str(full_moves))
         return "".join(hash)
@@ -377,7 +377,7 @@ class Chess:
             while last_cap_or_pawn:
                 if (last_cap_or_pawn - 1) in self.captured_pieces:
                     break
-                if self.is_type(self.move_list[last_cap_or_pawn - 2][1], "P"):
+                if self.is_type(self.move_list[last_cap_or_pawn - 1][1], "P"):
                     break
                 last_cap_or_pawn -= 1
             return move_index - last_cap_or_pawn
