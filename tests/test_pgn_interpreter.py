@@ -1,7 +1,7 @@
 import unittest
 import os
 
-from deepfianchetto.chess import Chess, STALEMATE, CHECKMATE, PLAY
+from deepfianchetto.chess import Chess, STALEMATE, CHECKMATE, NORMAL
 from deepfianchetto.chess_parser import parse_notation, parse_file
 from deepfianchetto.pgn_interpreter import ChessInterpreter
 
@@ -71,7 +71,7 @@ class TestInterpreter(unittest.TestCase):
             8.Nc3 O-O 9.dxc5 Bxc5 10.Na4 Be7 11.Be3 Re8 12.Rc1 Bg4"""
         correct_hash = "r2qr1k1/pp2bppp/2n2n2/3p4/N5b1/4BNP1/PP2PPBP/2RQ1RK1 w - - 6 13"
         self.simple_game_test(game, correct_hash)
-        assert self.board.game_state() == PLAY
+        assert self.board.game_state() == NORMAL
 
     def test_game_unfinished2(self):
         game = """1. d4 Nf6 2. c4 e6 3. Nf3 d5 4. Nc3 Bb4 5. Bg5 dxc4 6. e4 c5 7. e5 cxd4 
@@ -84,5 +84,5 @@ class TestInterpreter(unittest.TestCase):
         49. Kf2""" # 1/2-1/2"
         correct_hash = "6k1/5p2/7P/p4RP1/8/8/5K2/6r1 b - - 9 49"
         self.simple_game_test(game, correct_hash)
-        assert self.board.game_state() == PLAY
+        assert self.board.game_state() == NORMAL
 

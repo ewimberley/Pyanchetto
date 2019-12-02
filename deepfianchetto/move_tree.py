@@ -1,3 +1,4 @@
+from deepfianchetto.chess import NORMAL, CHECK, CHECKMATE, STALEMATE
 
 class MoveTree(object):
 
@@ -6,6 +7,11 @@ class MoveTree(object):
         self.children = []
         self.heuristic = 0.0
         self.board = None
+        self.capture = False
+        self.en_pessant = False
+        self.castle = False
+        self.promotion = False
+        self.game_state = NORMAL
 
     def add_moves(self, moves_dict):
         for piece in moves_dict:

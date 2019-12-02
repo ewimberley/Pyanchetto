@@ -1,7 +1,7 @@
 import sys
 from multiprocessing import Process, Queue
 
-from deepfianchetto.chess import Chess
+from deepfianchetto.chess import Chess, NORMAL, CHECK, CHECKMATE, STALEMATE
 from deepfianchetto.move_tree import MoveTree
 
 #correct[depth] = (nodes, captures, eps, castles, promotions, chks, discovery chks, double chks, chkmates)
@@ -15,6 +15,9 @@ correct[5] = (4865609, 82719, 258, 0, 0, 27351, 6, 0, 347)
 
 
 def perft(root, branch, board, depth, max_depth, child_processes=False, queue=None):
+    branch.game_state = board.game_state()
+    if len(board.move_list)-1 in board.captured_pieces:
+        branch.capture = True
     if depth < max_depth:
         piece_moves = board.valid_moves()
         moves = []
@@ -28,7 +31,6 @@ def perft(root, branch, board, depth, max_depth, child_processes=False, queue=No
             clone = Chess(board)
             clone.move(move[0], move[1])
             child = MoveTree(move)
-            branch.children.append(child)
             if child_processes:
                 q = Queue()
                 p = Process(target=perft, args=(root, child, clone, depth + 1, max_depth, False, q))
@@ -36,11 +38,12 @@ def perft(root, branch, board, depth, max_depth, child_processes=False, queue=No
                 processes.append(p)
                 queues.append(q)
             else:
+                branch.children.append(child)
                 perft(root, child, clone, depth + 1, max_depth, False)
         for i, p in enumerate(processes):
             filled_branch = queues[i].get()
-            for child in filled_branch.children:
-                branch.children.append(child)
+            #for child in filled_branch.children:
+            branch.children.append(filled_branch)
             p.join()
         if queue is not None:
             queue.put(branch)
@@ -48,12 +51,24 @@ def perft(root, branch, board, depth, max_depth, child_processes=False, queue=No
             return branch
 
 
-def validate(root, depth, max_depth):
+def validate(root, max_depth):
     valid = True
-
-    if root.count_nodes() != correct[depth][0]:
-        print("Wrong number of nodes at depth: " + str(depth))
-        valid = False
+    visiting = [root]
+    perft = {}
+    for depth in range(max_depth + 1):
+        perft[depth] = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+        to_visit = []
+        for node in visiting:
+            to_visit.extend(node.children)
+            perft[depth][0] += 1
+            if node.game_state == CHECK:
+                perft[depth][5] += 1
+            elif node.game_state == CHECKMATE:
+                perft[depth][8] += 1
+            if node.capture:
+                perft[depth][1] += 1
+        visiting = to_visit
+    print(perft)
     return valid
 
 
@@ -67,7 +82,7 @@ def main():
     board = Chess()
     root = MoveTree("Root")
     perft(root, root, board, 0, depth, True)
-    valid = validate(root, 1, depth)
+    valid = validate(root, depth)
     print(valid)
     #print(root.prettyPrint())
     print(root.count_nodes())

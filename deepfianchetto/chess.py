@@ -22,7 +22,7 @@ knight_warps = [(2, 1), (2, -1), (-2, 1), (-2, -1), (1, 2), (-1, 2), (1, -2), (-
 king_warps = [(1, 1), (-1, -1), (1, -1), (-1, 1), (0, 1), (0, -1), (1, 0), (-1, 0)]
 pawn_capture_warps = [[(-1, 1), (1, 1)], [(-1, -1), (1, -1)]]
 EMPTY, WHITE, BLACK = 0, 1, 2
-PLAY, CHECKMATE, STALEMATE = 0, 1, 2
+NORMAL, CHECK, CHECKMATE, STALEMATE = 0, 1, 2, 3
 
 def inc(x): return x + 1
 def dec(x): return x - 1
@@ -104,9 +104,10 @@ class Chess:
         moves = []
         for piece in piece_moves:
             moves.extend(piece_moves[piece])
+        check = self.check_check(self.current_player)
         if len(moves) == 0:
-            return CHECKMATE if self.check_check(self.current_player) else STALEMATE
-        return PLAY
+            return CHECKMATE if check else STALEMATE
+        return CHECK if check else NORMAL
 
     def valid_moves(self):
         threats = self.compute_threat_matrix(self.current_player)
