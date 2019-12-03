@@ -4,8 +4,6 @@ from deepfianchetto.chess import rank_file_to_coord, file_to_index
 WHITE = 1
 BLACK = 2
 
-logging.basicConfig(level=logging.DEBUG)
-
 def child_index_is_type(tree, index, type):
     return tree.children[index].data == type
 
@@ -19,11 +17,13 @@ class ChessInterpreter():
     def execute(self, tree, verbose):
         #TODO set logging level based on verbose
         self.verbose = verbose
+        if verbose:
+            logging.basicConfig(level=logging.DEBUG)
+        else:
+            logging.basicConfig(level=logging.WARN)
         self.pgn(tree.children[0])
 
     def pgn(self, tree):
-        if self.verbose:
-            print(self.board)
         for child in tree.children:
             if child.data == "turn":
                 self.turn(child)

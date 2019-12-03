@@ -65,6 +65,7 @@ def validate(root, max_depth):
                 perft[depth][5] += 1
             elif node.game_state == CHECKMATE:
                 perft[depth][8] += 1
+                perft[depth][5] += 1
             if node.capture:
                 perft[depth][1] += 1
         visiting = to_visit

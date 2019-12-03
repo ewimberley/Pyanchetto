@@ -1,5 +1,29 @@
 # deepfianchetto
-A chess engine for deep learning experimentation.
+A python chess engine for deep learning and AI experimentation.
+
+##Running a PGN file from the command line
+Specify a PGN file as input and optionally use -v or --verbose to print out each move.
+
+```
+python deepfianchetto/driver.py -p examplepgn/1000144.pgn
+
+**************************************************
+Deep Fianchetto - Python Chess Engine.
+**************************************************
+. . . . . . . .
+. . . . . . . .
+. . . . . . . .
+. . . . . . . ♟
+. . . . . ♚ . ♙
+. . . . . . . ♔
+. . . . . . . ♙
+. . . . . . . .
+
+8/8/8/7p/5k1P/7K/7P/8 w - - 1 76
+```
+
+##Programmatically running a PGN string
+Executing a PGN string can be done in only a few lines of code.
 
 ```
 from deepfianchetto.chess import Chess
@@ -107,5 +131,5 @@ Turn: 5
 ♙ ♙ ♙ ♙ . ♙ ♙ ♙
 ♖ . ♗ . ♔ ♗ ♘ ♖
 
-rnbqkb1r/ppppp2p/5p2/7Q/8/8/PPPP1PPP/R1B1KBNR b KQkq - 1 
+rnbqkb1r/ppppp2p/5p2/7Q/8/8/PPPP1PPP/R1B1KBNR b KQkq - 1 5 
 ```
