@@ -1,8 +1,8 @@
 import sys
 from multiprocessing import Process, Queue
 
-from deepfianchetto.chess import Chess, NORMAL, CHECK, CHECKMATE, STALEMATE
-from deepfianchetto.move_tree import MoveTree
+from pyanchetto.chess import Chess, NORMAL, CHECK, CHECKMATE, STALEMATE
+from pyanchetto.move_tree import MoveTree
 
 #correct[depth] = (nodes, captures, eps, castles, promotions, chks, discovery chks, double chks, chkmates)
 correct = {}
@@ -75,7 +75,7 @@ def validate(root, max_depth):
 
 def main():
     print("*"*50)
-    print("Deep Fianchetto Perft Validator.")
+    print("Pyanchetto Perft Validator.")
     print("*"*50)
     depth = int(sys.argv[1])
     threads = 1

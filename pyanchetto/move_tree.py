@@ -1,4 +1,4 @@
-from deepfianchetto.chess import NORMAL, CHECK, CHECKMATE, STALEMATE
+from pyanchetto.chess import NORMAL, CHECK, CHECKMATE, STALEMATE
 
 class MoveTree(object):
 

@@ -1,8 +1,8 @@
 import logging
 import argparse
-from deepfianchetto.chess import Chess
-from deepfianchetto.pgn_interpreter import ChessInterpreter
-from deepfianchetto.chess_parser import parse_notation
+from pyanchetto.chess import Chess
+from pyanchetto.pgn_interpreter import ChessInterpreter
+from pyanchetto.chess_parser import parse_notation
 
 ENCODE_IN = 'utf-8'
 
@@ -17,7 +17,7 @@ def main():
     args = parse_args()
     logging.basicConfig(level=args.verbose)
     print("*"*50)
-    print("Deep Fianchetto - Python Chess Engine.")
+    print("Pyanchetto - Python Chess Engine.")
     print("*"*50)
 
     board = Chess()

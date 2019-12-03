@@ -1,5 +1,5 @@
 import logging
-from deepfianchetto.chess import rank_file_to_coord, file_to_index
+from pyanchetto.chess import rank_file_to_coord, file_to_index
 
 WHITE = 1
 BLACK = 2

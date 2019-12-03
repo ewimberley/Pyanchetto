@@ -1,11 +1,11 @@
-# deepfianchetto
-A python chess engine for deep learning and AI experimentation.
+# Pyanchetto
+A python chess engine.
 
 ##Running a PGN file from the command line
 Specify a PGN file as input and optionally use -v or --verbose to print out each move.
 
 ```
-python deepfianchetto/driver.py -p examplepgn/1000144.pgn
+python pyanchetto/driver.py -p examplepgn/1000144.pgn
 
 **************************************************
 Deep Fianchetto - Python Chess Engine.
@@ -26,9 +26,9 @@ Deep Fianchetto - Python Chess Engine.
 Executing a PGN string can be done in only a few lines of code.
 
 ```
-from deepfianchetto.chess import Chess
-from deepfianchetto.pgn_interpreter import ChessInterpreter
-from deepfianchetto.chess_parser import parse_notation
+from pyanchetto.chess import Chess
+from pyanchetto.pgn_interpreter import ChessInterpreter
+from pyanchetto.chess_parser import parse_notation
 board = Chess()
 interpreter = ChessInterpreter(board)
 game = "1. Nc3 f5 2. e4 fxe4 3. Nxe4 Nf6 4. Nxf6+ gxf6 5. Qh5#"

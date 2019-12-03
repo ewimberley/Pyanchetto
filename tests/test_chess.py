@@ -1,6 +1,6 @@
 import unittest
 
-from deepfianchetto.chess import Chess
+from pyanchetto.chess import Chess
 
 class TestChess(unittest.TestCase):
     def setUp(self):

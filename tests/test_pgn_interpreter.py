@@ -1,9 +1,9 @@
 import unittest
 import os
 
-from deepfianchetto.chess import Chess, STALEMATE, CHECKMATE, NORMAL
-from deepfianchetto.chess_parser import parse_notation, parse_file
-from deepfianchetto.pgn_interpreter import ChessInterpreter
+from pyanchetto.chess import Chess, STALEMATE, CHECKMATE, NORMAL
+from pyanchetto.chess_parser import parse_notation, parse_file
+from pyanchetto.pgn_interpreter import ChessInterpreter
 
 
 class TestInterpreter(unittest.TestCase):
