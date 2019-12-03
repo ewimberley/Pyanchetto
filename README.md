@@ -8,7 +8,7 @@ Specify a PGN file as input and optionally use -v or --verbose to print out each
 python pyanchetto/driver.py -p examplepgn/1000144.pgn
 
 **************************************************
-Deep Pyanchetto - Python Chess Engine.
+Pyanchetto - Python Chess Engine.
 **************************************************
 . . . . . . . .
 . . . . . . . .
