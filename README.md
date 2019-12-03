@@ -1,7 +1,7 @@
 # Pyanchetto
 A python chess engine.
 
-##Running a PGN file from the command line
+## Running a PGN file from the command line
 Specify a PGN file as input and optionally use -v or --verbose to print out each move.
 
 ```
@@ -22,7 +22,7 @@ Deep Fianchetto - Python Chess Engine.
 8/8/8/7p/5k1P/7K/7P/8 w - - 1 76
 ```
 
-##Programmatically running a PGN string
+## Programmatically running a PGN string
 Executing a PGN string can be done in only a few lines of code.
 
 ```
