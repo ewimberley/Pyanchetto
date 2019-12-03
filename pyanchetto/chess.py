@@ -28,9 +28,9 @@ def inc(x): return x + 1
 def dec(x): return x - 1
 def same(x): return x
 def file_to_index(file): return ord(file) - 97
-def index_to_file(index): chr(index + 97)
+def index_to_file(index): return chr(index + 97)
 def rank_file_to_coord(to_rank_file): return (file_to_index(to_rank_file[0]), int(to_rank_file[1]) - 1)
-def coord_to_notation(coord): return index_to_file(coord[0]) + str(coord[1])
+def coord_to_notation(coord): return index_to_file(coord[0]) + str(coord[1]+1)
 def in_range(coord): return coord[0] in range(SIZE) and coord[1] in range(SIZE)
 def inverse_color(color): return WHITE if color == BLACK else BLACK
 def map2(func, vals): return [func(val) for val in vals] #map with side effects
@@ -48,31 +48,29 @@ class Chess:
 
     def __init__(self, other=None):
         if other is not None:
-            self.current_player = other.current_player
-            self.move_list = copy.deepcopy(other.move_list)
             self.board = np.copy(other.board)
             self.rooks_moved = copy.deepcopy(other.rooks_moved)
             self.kings_moved = copy.deepcopy(other.kings_moved)
+            self.current_player = other.current_player
+            self.move_list = copy.deepcopy(other.move_list)
+            self.pgn_str = copy.deepcopy(other.pgn_str)
             self.captured_pieces = copy.deepcopy(other.captured_pieces)
             self.promoted_pieces = copy.deepcopy(other.promoted_pieces)
             self.player_pieces_list = copy.deepcopy(other.player_pieces_list)
-            self.full_move_clock = other.full_move_clock
-            self.half_move_clock = other.half_move_clock
         else:
-            self.current_player = 1
-            self.move_list = []
             self.board = np.zeros((8, 8), dtype=np.int8)
             self.rooks_moved = [-1, -1, -1, -1]
             self.kings_moved = [-1, -1]
+            self.current_player = 1
+            self.move_list = []
+            self.pgn_str = []
+            self.captured_pieces = {}
+            self.promoted_pieces = {}
             self.__set_row(0, home_row)
             self.__set_row(1, ["P"] * 8)
             self.__set_row(6, ["p"] * 8)
             self.__set_row(7, [p.lower() for p in home_row])
             self.init_player_pieces()
-            self.captured_pieces = {}
-            self.promoted_pieces = {}
-            self.full_move_clock = 1
-            self.half_move_clock = 0
 
     def init_player_pieces(self):
         self.player_pieces_list =[{c for c in all_coords if self.is_color(c, color)} for color in (WHITE, BLACK)]
@@ -179,6 +177,12 @@ class Chess:
                     rook_index = king_castle_end_positions_index[to_coord]
                     self.__move(rook_positions[rook_index], rook_castle_end_positions[rook_index])
             self.__move(from_coord, to_coord)
+            pgn_type = pieces[self.coord(to_coord)].upper()
+            pgn = (pgn_type if pgn_type != "P" else "") + coord_to_notation(to_coord) + " "
+            if self.current_player == WHITE:
+                self.pgn_str.append(str(self.get_full_move_clock()) + ". " + pgn)
+            else:
+                self.pgn_str.append(pgn)
             self.move_list.append((from_coord, (to_coord[0], to_coord[1])))
             if len(to_coord) == 4:
                 self.__handle_special(from_coord, to_coord)
@@ -200,6 +204,7 @@ class Chess:
 
     def __undo_last_move(self):
         last_move = self.move_list.pop()
+        last_pgn = self.pgn_str.pop()
         last_move_type = self
         last_move_index = len(self.move_list)
         captured = self.captured_pieces.pop(last_move_index, None)
@@ -331,7 +336,6 @@ class Chess:
         return "".join([" ".join(piece_arr[i*SIZE:i*SIZE+SIZE])+"\n" for i in range(SIZE)])
 
     def fen(self):
-        #return "".join([pieces[self.coord((coord[1], SIZE - coord[0] - 1))] for coord in all_coords])
         hash = []
         for i, coord in enumerate(all_coords):
             p_type = self.coord((coord[1], SIZE - coord[0] - 1))
@@ -367,9 +371,12 @@ class Chess:
         else:
             hash.append(" - ")
         hash.append(str(self.get_half_move_clock()))
-        full_moves = math.floor(len(self.move_list) / 2) + 1
+        full_moves = self.get_full_move_clock()
         hash.append(" " + str(full_moves))
         return "".join(hash)
+
+    def get_full_move_clock(self):
+        return math.floor(len(self.move_list) / 2) + 1
 
     def get_half_move_clock(self):
         move_index = len(self.move_list)
@@ -384,3 +391,6 @@ class Chess:
             return move_index - last_cap_or_pawn
         else:
             return 0
+
+    def pgn(self):
+        return "".join(self.pgn_str)
