@@ -24,9 +24,6 @@ pawn_capture_warps = [[(-1, 1), (1, 1)], [(-1, -1), (1, -1)]]
 EMPTY, WHITE, BLACK = 0, 1, 2
 NORMAL, CHECK, CHECKMATE, STALEMATE = 0, 1, 2, 3
 
-def inc(x): return x + 1
-def dec(x): return x - 1
-def same(x): return x
 def file_to_index(file): return ord(file) - 97
 def index_to_file(index): return chr(index + 97)
 def rank_file_to_coord(to_rank_file): return (file_to_index(to_rank_file[0]), int(to_rank_file[1]) - 1)
@@ -165,6 +162,7 @@ class Chess:
             threats = self.compute_threat_matrix(self.current_player) if self.is_type(from_coord, "K") else None
             valid_moves = self.valid_piece_moves(from_coord, True, threats)
         if not validate or to_coord in valid_moves:
+            pgn_castle = None
             if self.is_type(from_coord, "R") and from_coord in rook_positions_index:
                 rook_index = rook_positions_index[from_coord]
                 if self.rooks_moved[rook_index] == -1:
@@ -176,9 +174,26 @@ class Chess:
                 if to_coord in king_castle_end_positions:
                     rook_index = king_castle_end_positions_index[to_coord]
                     self.__move(rook_positions[rook_index], rook_castle_end_positions[rook_index])
+                    castle_pos_index = king_castle_end_positions.index(to_coord)
+                    if castle_pos_index == 0 or castle_pos_index == 2:
+                        pgn_castle = "O-O-O "
+                    else:
+                        pgn_castle = "O-O "
+            to_color = self.color(to_coord)
+            capture_str = "x" if to_color != EMPTY else ""
             self.__move(from_coord, to_coord)
-            pgn_type = pieces[self.coord(to_coord)].upper()
-            pgn = (pgn_type if pgn_type != "P" else "") + coord_to_notation(to_coord) + " "
+            if pgn_castle is not None:
+                pgn = pgn_castle
+            else:
+                pgn_type = pieces[self.coord(to_coord)].upper()
+                notation_coord = coord_to_notation(to_coord)
+                if pgn_type == "P":
+                    if capture_str != "":
+                        pgn = index_to_file(from_coord[0]) + capture_str + notation_coord + " "
+                    else:
+                        pgn = notation_coord + " "
+                else:
+                    pgn = pgn_type + capture_str + notation_coord + " "
             if self.current_player == WHITE:
                 self.pgn_str.append(str(self.get_full_move_clock()) + ". " + pgn)
             else:
@@ -307,26 +322,26 @@ class Chess:
             if in_range(warp) and self.color(warp) not in excluded:
                 yield warp
 
-    def orthogonal(self, moves, f, r): return self.__vectors(moves, f, r, [(inc, same), (dec, same), (same, inc), (same, dec)])
+    def orthogonal(self, moves, f, r): return self.__vectors(moves, f, r, [(1, 0), (-1, 0), (0, 1), (0, -1)])
 
-    def diagonal(self, moves, f, r): return self.__vectors(moves, f, r, [(inc, inc), (dec, dec), (inc, dec), (dec, inc)])
+    def diagonal(self, moves, f, r): return self.__vectors(moves, f, r, [(1, 1), (-1, -1), (1, -1), (-1, 1)])
 
-    def __vectors(self, moves, f, r, funcs_list):
+    def __vectors(self, moves, f, r, offsets_list):
         for move in moves:
             yield move
-        for funcs in funcs_list:
-            for move in self.__vector(f, r, funcs):
+        for offset in offsets_list:
+            for move in self.__vector(f, r, offset):
                 yield move
 
-    def __vector(self, f, r, funcs):
+    def __vector(self, f, r, offset):
         color = self.color((f, r))
         inv_color = inverse_color(color)
-        coord = (funcs[1](f), funcs[0](r), True)
+        coord = (f + offset[1], r + offset[0], True)
         while in_range(coord) and self.color(coord) in (inv_color, EMPTY):
             yield coord
             if self.color(coord) == inv_color:
                 break
-            coord = (funcs[1](coord[0]), funcs[0](coord[1]), coord[2])
+            coord = (offset[1] + coord[0], offset[0] + coord[1], coord[2])
 
     def __set_row(self, row, row_pieces):
         map2(lambda col: self.coord((col, row), pieces_index[row_pieces[col]]), [col for col in range(SIZE)])
