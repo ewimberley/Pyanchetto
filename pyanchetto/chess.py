@@ -56,13 +56,10 @@ class Chess:
             self.player_pieces_list = copy.deepcopy(other.player_pieces_list)
         else:
             self.board = np.zeros((8, 8), dtype=np.int8)
-            self.rooks_moved = [-1, -1, -1, -1]
-            self.kings_moved = [-1, -1]
+            self.rooks_moved, self.kings_moved = [-1, -1, -1, -1], [-1, -1]
             self.current_player = 1
-            self.move_list = []
-            self.pgn_str = []
-            self.captured_pieces = {}
-            self.promoted_pieces = {}
+            self.move_list, self.pgn_str = [], []
+            self.captured_pieces, self.promoted_pieces = {}, {}
             self.__set_row(0, home_row)
             self.__set_row(1, ["P"] * 8)
             self.__set_row(6, ["p"] * 8)
@@ -162,14 +159,11 @@ class Chess:
             threats = self.compute_threat_matrix(self.current_player) if self.is_type(from_coord, "K") else None
             valid_moves = self.valid_piece_moves(from_coord, True, threats)
         if not validate or to_coord in valid_moves:
-            pgn_castle = None
+            pgn_castle, pgn_promotion, file_disambiguation, rank_disambiguation = None, "", "", ""
             if self.is_type(from_coord, "K") and from_coord in king_positions:
                 if to_coord in king_castle_end_positions:
                     castle_pos_index = king_castle_end_positions.index(to_coord)
-                    if castle_pos_index == 0 or castle_pos_index == 2:
-                        pgn_castle = "O-O-O "
-                    else:
-                        pgn_castle = "O-O "
+                    pgn_castle = "O-O-O " if castle_pos_index == 0 or castle_pos_index == 2 else "O-O "
             to_color = self.color(to_coord)
             capture_str = "x" if to_color != EMPTY else ""
             if pgn_gen and validate:
@@ -183,10 +177,12 @@ class Chess:
                             print("disambiguate!")
                     notation_coord = coord_to_notation(to_coord)
                     if pgn_type == "P":
+                        if len(to_coord) == 4 and to_coord[3] != 6 and to_coord[3] != 12:
+                            pgn_promotion = "=" + to_coord[3].upper()
                         if capture_str != "":
-                            pgn = index_to_file(from_coord[0]) + capture_str + notation_coord
+                            pgn = index_to_file(from_coord[0]) + capture_str + notation_coord + pgn_promotion
                         else:
-                            pgn = notation_coord
+                            pgn = notation_coord + pgn_promotion
                     else:
                         pgn = pgn_type + capture_str + notation_coord
 
@@ -260,13 +256,13 @@ class Chess:
             self.player_pieces_list[self.color(captured[1]) - 1].add(captured[1])
 
     def __handle_special(self, from_coord, to_coord):
-        if to_coord[3] == 6 or to_coord[3] == 12:
+        if to_coord[3] == 6 or to_coord[3] == 12: #en pessant
             captured = (to_coord[0], from_coord[1])
             captured_color = self.color(captured)
             self.captured_pieces[len(self.move_list) - 1] = (self.coord(captured), captured)
             self.coord(captured, EMPTY)
             self.player_pieces_list[captured_color - 1].remove(captured)
-        else:
+        else: #promotion
             promotion_type = to_coord[3]
             if promotion_type.upper() in promotion_candidates and self.is_type(to_coord, "P"):
                 if self.current_player == WHITE and to_coord[1] == 7:

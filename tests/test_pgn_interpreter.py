@@ -41,6 +41,12 @@ class TestInterpreter(unittest.TestCase):
         #print(self.board)
         #print(self.board.pgn())
         assert self.board.fen() == correct_hash
+        tree2 = parse_notation(self.board.pgn())
+        print(self.board.pgn())
+        board2 = Chess()
+        interpreter2 = ChessInterpreter(board2)
+        interpreter2.execute(tree2, False)
+        assert board2.fen() == correct_hash
 
     def test_game_file(self):
         self.game_file_test("1000144.pgn", "8/8/8/7p/5k1P/7K/7P/8 w - - 1 76")
