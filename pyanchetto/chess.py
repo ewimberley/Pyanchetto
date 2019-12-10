@@ -122,7 +122,7 @@ class Chess:
         if validate:
             player = self.current_player
             for move in moves: #simulate to prevent moving into check
-                self.move(p, move, False)
+                self.move(p, move, False, False)
                 if not self.check_check(player):
                     self.__undo_last_move()
                     yield move
@@ -157,12 +157,42 @@ class Chess:
         king = list(self.player_pieces_of_type("K", player))
         return (king[0][0], king[0][1], True) in threats
 
-    def move(self, from_coord, to_coord, validate=True):
+    def move(self, from_coord, to_coord, validate=True, pgn_gen=True):
         if validate:
             threats = self.compute_threat_matrix(self.current_player) if self.is_type(from_coord, "K") else None
             valid_moves = self.valid_piece_moves(from_coord, True, threats)
         if not validate or to_coord in valid_moves:
             pgn_castle = None
+            if self.is_type(from_coord, "K") and from_coord in king_positions:
+                if to_coord in king_castle_end_positions:
+                    castle_pos_index = king_castle_end_positions.index(to_coord)
+                    if castle_pos_index == 0 or castle_pos_index == 2:
+                        pgn_castle = "O-O-O "
+                    else:
+                        pgn_castle = "O-O "
+            to_color = self.color(to_coord)
+            capture_str = "x" if to_color != EMPTY else ""
+            if pgn_gen and validate:
+                if pgn_castle is not None:
+                    pgn = pgn_castle
+                else:
+                    pgn_type = pieces[self.coord(from_coord)].upper()
+                    #TODO piece disambiguation if same type of piece can move to to_coord
+                    for move in valid_moves:
+                        if move[1] == to_coord and self.is_type(move[0], pgn_type):
+                            print("disambiguate!")
+                    notation_coord = coord_to_notation(to_coord)
+                    if pgn_type == "P":
+                        if capture_str != "":
+                            pgn = index_to_file(from_coord[0]) + capture_str + notation_coord
+                        else:
+                            pgn = notation_coord
+                    else:
+                        pgn = pgn_type + capture_str + notation_coord
+
+                if self.current_player == WHITE:
+                    self.pgn_str.append(str(self.get_full_move_clock()) + ".")
+                self.pgn_str.append(pgn)
             if self.is_type(from_coord, "R") and from_coord in rook_positions_index:
                 rook_index = rook_positions_index[from_coord]
                 if self.rooks_moved[rook_index] == -1:
@@ -175,33 +205,20 @@ class Chess:
                     rook_index = king_castle_end_positions_index[to_coord]
                     self.__move(rook_positions[rook_index], rook_castle_end_positions[rook_index])
                     castle_pos_index = king_castle_end_positions.index(to_coord)
-                    if castle_pos_index == 0 or castle_pos_index == 2:
-                        pgn_castle = "O-O-O "
-                    else:
-                        pgn_castle = "O-O "
-            to_color = self.color(to_coord)
-            capture_str = "x" if to_color != EMPTY else ""
             self.__move(from_coord, to_coord)
-            if pgn_castle is not None:
-                pgn = pgn_castle
-            else:
-                pgn_type = pieces[self.coord(to_coord)].upper()
-                notation_coord = coord_to_notation(to_coord)
-                if pgn_type == "P":
-                    if capture_str != "":
-                        pgn = index_to_file(from_coord[0]) + capture_str + notation_coord + " "
-                    else:
-                        pgn = notation_coord + " "
-                else:
-                    pgn = pgn_type + capture_str + notation_coord + " "
-            if self.current_player == WHITE:
-                self.pgn_str.append(str(self.get_full_move_clock()) + ". " + pgn)
-            else:
-                self.pgn_str.append(pgn)
             self.move_list.append((from_coord, (to_coord[0], to_coord[1])))
             if len(to_coord) == 4:
                 self.__handle_special(from_coord, to_coord)
             self.current_player = inverse_color(self.current_player)
+            if pgn_gen and validate:
+                state = self.game_state()
+                modifier = None
+                if state == CHECK:
+                    modifier = "+"
+                elif state == CHECKMATE:
+                    modifier = "#"
+                if modifier is not None:
+                    self.pgn_str[-1] += modifier
         else:
             raise BadMoveException("Move is invalid")
 
@@ -219,7 +236,6 @@ class Chess:
 
     def __undo_last_move(self):
         last_move = self.move_list.pop()
-        last_pgn = self.pgn_str.pop()
         last_move_type = self
         last_move_index = len(self.move_list)
         captured = self.captured_pieces.pop(last_move_index, None)
@@ -364,6 +380,8 @@ class Chess:
             else:
                 hash.append(pieces[p_type])
         hash.append(" w " if self.current_player == WHITE else " b ")
+
+        hash_len = len(hash)
         if self.kings_moved[0] == -1:
             if self.rooks_moved[0] == -1:
                 hash.append("K")
@@ -374,7 +392,7 @@ class Chess:
                 hash.append("k")
             if self.rooks_moved[3] == -1:
                 hash.append("q")
-        if self.kings_moved[0] != -1 and self.kings_moved[1] != -1:
+        if len(hash) == hash_len: #nothing new appeneded for castling
             hash.append("-")
         if len(self.move_list) > 0:
             last_move = self.move_list[-1]
@@ -408,4 +426,4 @@ class Chess:
             return 0
 
     def pgn(self):
-        return "".join(self.pgn_str)
+        return " ".join(self.pgn_str)

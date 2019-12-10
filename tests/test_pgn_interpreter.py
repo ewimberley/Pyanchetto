@@ -14,14 +14,20 @@ class TestInterpreter(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def simple_game_test(self, game, correct_hash):
-        tree = parse_notation(game)
+    def simple_game_test(self, pgn, correct_hash):
+        tree = parse_notation(pgn)
         #print(tree.pretty())
-        self.interpreter.execute(tree, True)
+        self.interpreter.execute(tree, False)
         print(self.board.fen())
         #print(self.board)
         assert self.board.fen() == correct_hash
-    
+        print(self.board.pgn())
+        tree2 = parse_notation(self.board.pgn())
+        board2 = Chess()
+        interpreter2 = ChessInterpreter(board2)
+        interpreter2.execute(tree2, False)
+        assert board2.fen() == correct_hash
+
     def game_file_test(self, file, correct_hash):
         if "examplepgn" in os.listdir("."):
             example_path = "examplepgn/"
@@ -31,8 +37,9 @@ class TestInterpreter(unittest.TestCase):
         #print(tree.pretty())
         #self.interpreter.execute(tree, True)
         self.interpreter.execute(tree, False)
-        print(self.board.fen())
-        print(self.board)
+        #print(self.board.fen())
+        #print(self.board)
+        #print(self.board.pgn())
         assert self.board.fen() == correct_hash
 
     def test_game_file(self):
@@ -61,20 +68,20 @@ class TestInterpreter(unittest.TestCase):
         assert self.board.game_state() == STALEMATE
 
     def test_game_checkmate(self):
-        game = "1. Nc3 f5 2. e4 fxe4 3. Nxe4 Nf6 4. Nxf6+ gxf6 5. Qh5#"
+        pgn = "1. Nc3 f5 2. e4 fxe4 3. Nxe4 Nf6 4. Nxf6+ gxf6 5. Qh5#"
         correct_hash = "rnbqkb1r/ppppp2p/5p2/7Q/8/8/PPPP1PPP/R1B1KBNR b KQkq - 1 5"
-        self.simple_game_test(game, correct_hash)
+        self.simple_game_test(pgn, correct_hash)
         assert self.board.game_state() == CHECKMATE
 
     def test_game_unfinished(self):
-        game = """1.d4 d5 2.c4 e6 3.Nf3 c5 4.cxd5 exd5 5.g3 Nc6 6.Bg2 Nf6 7.O-O Be7 
+        pgn = """1.d4 d5 2.c4 e6 3.Nf3 c5 4.cxd5 exd5 5.g3 Nc6 6.Bg2 Nf6 7.O-O Be7 
             8.Nc3 O-O 9.dxc5 Bxc5 10.Na4 Be7 11.Be3 Re8 12.Rc1 Bg4"""
         correct_hash = "r2qr1k1/pp2bppp/2n2n2/3p4/N5b1/4BNP1/PP2PPBP/2RQ1RK1 w - - 6 13"
-        self.simple_game_test(game, correct_hash)
+        self.simple_game_test(pgn, correct_hash)
         assert self.board.game_state() == NORMAL
 
     def test_game_unfinished2(self):
-        game = """1. d4 Nf6 2. c4 e6 3. Nf3 d5 4. Nc3 Bb4 5. Bg5 dxc4 6. e4 c5 7. e5 cxd4 
+        pgn = """1. d4 Nf6 2. c4 e6 3. Nf3 d5 4. Nc3 Bb4 5. Bg5 dxc4 6. e4 c5 7. e5 cxd4 
         8. Nxd4 Bxc3+ 9. bxc3 Qa5 10. exf6 Qxg5 11. fxg7 Qxg7 12. Qd2 O-O 13. Bxc4 Rd8 
         14. Qe3 Bd7 15. O-O-O Nc6 16. Bb3 Be8 17. Nxc6 Bxc6 18. h4 Qf6 19. Rh3 b5 20. Rg3+ Kh8 
         21. Rg4 a5 22. Rf4 Qg7 23. Rxd8+ Rxd8 24. g4 b4 25. g5 bxc3 26. Bc2 Bd5 27. Rf6 Qf8 
@@ -83,6 +90,12 @@ class TestInterpreter(unittest.TestCase):
         42. h6 Kg8 43. a4 Rh4 44. Rxf5 Rxa4 45. Kf2 Rg4 46. Kf3 Rg1 47. Kf2 Rg4 48. Kf3 Rg1 
         49. Kf2""" # 1/2-1/2"
         correct_hash = "6k1/5p2/7P/p4RP1/8/8/5K2/6r1 b - - 9 49"
-        self.simple_game_test(game, correct_hash)
+        self.simple_game_test(pgn, correct_hash)
         assert self.board.game_state() == NORMAL
 
+
+    def test_game_ambiguous(self):
+        pgn = "1. Nc3 Nf6  2. Nf3 Nc6  3. Nh4 Nb4  4. Nf5 Rg8  5. Ne3 Rh8  6. Ned5"
+        correct_hash = "r1bqkb1r/pppppppp/5n2/3N4/1n6/2N5/PPPPPPPP/R1BQKB1R b KQk - 11 6"
+        self.simple_game_test(pgn, correct_hash)
+        assert self.board.game_state() == CHECKMATE

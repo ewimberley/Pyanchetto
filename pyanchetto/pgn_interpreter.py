@@ -85,7 +85,6 @@ class ChessInterpreter():
     def find_piece_for_move(self, required_file, required_rank, threaten):
         of_type = self.board.player_pieces_of_type(self.piece, self.board.current_player)
         logging.debug("Looking for a " + str(self.piece) + " that can move to " + str(self.to_coord))
-        logging.debug("Possible options are: " + str(of_type))
         for piece in of_type:
             if required_file != -1:
                 if piece[0] != required_file:
@@ -101,7 +100,7 @@ class ChessInterpreter():
                     if len(move) == 4:
                         special = move[3]
                     return from_coord, threaten, special
-        return None, None
+        return None, None, None
 
     def coord(self, tree):
         file = self.rank(tree.children[0])

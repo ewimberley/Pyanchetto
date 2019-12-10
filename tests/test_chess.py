@@ -10,7 +10,6 @@ class TestChess(unittest.TestCase):
         pass
 
     def test_init(self):
-        print(self.board.fen())
         assert self.board.fen() == "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
     def test_get_piece_color(self):
@@ -90,7 +89,7 @@ class TestChess(unittest.TestCase):
         self.board.move((4, 0), (2, 0, False))
         assert self.board.fen() == "r3k2r/8/8/8/8/8/8/2KR3R b kq - 1 1"
         self.board.move((4, 7), (6, 7, False))
-        print(self.board.fen())
+        #print(self.board.fen())
         assert self.board.fen() == "r4rk1/8/8/8/8/8/8/2KR3R w - - 2 2"
 
     def test_valid_opening_moves(self):
