@@ -31,7 +31,6 @@ def main():
     interpreter.execute(tree, args.verbose)
     print(board)
     print(board.fen())
-    print(board.pgn())
 
 if __name__ == "__main__":
     main()
