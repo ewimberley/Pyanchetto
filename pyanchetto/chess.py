@@ -171,10 +171,16 @@ class Chess:
                     pgn = pgn_castle
                 else:
                     pgn_type = pieces[self.coord(from_coord)].upper()
+                    piece_type = self.coord(from_coord)
                     #TODO piece disambiguation if same type of piece can move to to_coord
-                    for move in valid_moves:
-                        if move[1] == to_coord and self.is_type(move[0], pgn_type):
-                            print("disambiguate!")
+                    for piece in self.__type_in_coords(self.player_pieces_list[self.current_player-1], piece_type):
+                        if self.coord(piece) == piece_type and piece != from_coord:
+                            for move in self.valid_piece_moves(piece):
+                                if move == to_coord:
+                                    if piece[0] == from_coord[0]:
+                                        rank_disambiguation = str(from_coord[1] + 1)
+                                    else:
+                                        file_disambiguation = index_to_file(from_coord[0])
                     notation_coord = coord_to_notation(to_coord)
                     if pgn_type == "P":
                         if len(to_coord) == 4 and to_coord[3] != 6 and to_coord[3] != 12:
@@ -184,7 +190,7 @@ class Chess:
                         else:
                             pgn = notation_coord + pgn_promotion
                     else:
-                        pgn = pgn_type + capture_str + notation_coord
+                        pgn = pgn_type + file_disambiguation + rank_disambiguation + capture_str + notation_coord
 
                 if self.current_player == WHITE:
                     self.pgn_str.append(str(self.get_full_move_clock()) + ".")
@@ -354,6 +360,11 @@ class Chess:
             if self.color(coord) == inv_color:
                 break
             coord = (offset[1] + coord[0], offset[0] + coord[1], coord[2])
+
+    def __type_in_coords(self, coords, type):
+        for coord in coords:
+            if self.coord(coord) == type:
+                yield coord
 
     def __set_row(self, row, row_pieces):
         map2(lambda col: self.coord((col, row), pieces_index[row_pieces[col]]), [col for col in range(SIZE)])

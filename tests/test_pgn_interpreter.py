@@ -18,10 +18,10 @@ class TestInterpreter(unittest.TestCase):
         tree = parse_notation(pgn)
         #print(tree.pretty())
         self.interpreter.execute(tree, False)
-        print(self.board.fen())
+        #print(self.board.fen())
         #print(self.board)
         assert self.board.fen() == correct_hash
-        print(self.board.pgn())
+        #print(self.board.pgn())
         tree2 = parse_notation(self.board.pgn())
         board2 = Chess()
         interpreter2 = ChessInterpreter(board2)
@@ -42,7 +42,7 @@ class TestInterpreter(unittest.TestCase):
         #print(self.board.pgn())
         assert self.board.fen() == correct_hash
         tree2 = parse_notation(self.board.pgn())
-        print(self.board.pgn())
+        #print(self.board.pgn())
         board2 = Chess()
         interpreter2 = ChessInterpreter(board2)
         interpreter2.execute(tree2, False)
@@ -104,4 +104,4 @@ class TestInterpreter(unittest.TestCase):
         pgn = "1. Nc3 Nf6  2. Nf3 Nc6  3. Nh4 Nb4  4. Nf5 Rg8  5. Ne3 Rh8  6. Ned5"
         correct_hash = "r1bqkb1r/pppppppp/5n2/3N4/1n6/2N5/PPPPPPPP/R1BQKB1R b KQk - 11 6"
         self.simple_game_test(pgn, correct_hash)
-        assert self.board.game_state() == CHECKMATE
+        assert self.board.game_state() == NORMAL
