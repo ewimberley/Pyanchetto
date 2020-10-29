@@ -157,7 +157,7 @@ class Chess:
     def move(self, from_coord, to_coord, validate=True, pgn_gen=True):
         if validate:
             threats = self.compute_threat_matrix(self.current_player) if self.is_type(from_coord, "K") else None
-            valid_moves = self.valid_piece_moves(from_coord, True, threats)
+            valid_moves = self.valid_piece_moves(from_coord, True, threats) if self.is_color(from_coord, self.current_player) else {}
         if not validate or to_coord in valid_moves:
             pgn_castle, pgn_promotion, file_disambiguation, rank_disambiguation = None, "", "", ""
             if self.is_type(from_coord, "K") and from_coord in king_positions:
