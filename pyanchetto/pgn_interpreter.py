@@ -19,8 +19,10 @@ class ChessInterpreter():
         self.verbose = verbose
         if verbose:
             logging.basicConfig(level=logging.DEBUG)
+            logging.getLogger().setLevel(logging.DEBUG)
         else:
             logging.basicConfig(level=logging.WARN)
+            logging.getLogger().setLevel(logging.WARN)
         self.pgn(tree.children[0])
 
     def pgn(self, tree):

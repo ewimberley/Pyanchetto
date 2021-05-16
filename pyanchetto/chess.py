@@ -300,11 +300,14 @@ class Chess:
                     yield (move[0], move[1], move[2], promotion.lower())
             else:
                 yield move
-        if len(self.move_list) > 0: #en pessant
+        if len(self.move_list) > 0: #en pessant - check that last move was a double pawn advance
             last_move = self.move_list[-1]
             if self.is_type(last_move[1], "P") and self.is_color(last_move[1], inverse_color(color)):
                 if abs(last_move[1][1] - last_move[0][1]) == 2 and abs(last_move[0][0] - f) == 1 and last_move[1][1] == r:
-                    yield (last_move[0][0], r + 1, False, self.coord((f, r)))
+                    if color == 2:
+                        yield (last_move[0][0], r - 1, False, self.coord((f, r)))
+                    else:
+                        yield (last_move[0][0], r + 1, False, self.coord((f, r)))
 
     def rook(self, f, r): return self.orthogonal([], f, r)
 
