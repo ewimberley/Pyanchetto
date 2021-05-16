@@ -73,6 +73,9 @@ class TestInterpreter(unittest.TestCase):
         self.game_file_test("1098027.pgn", "8/8/1K5p/3R2nk/P3B1p1/6P1/8/8 b - - 0 78")
         assert self.board.game_state() == STALEMATE
 
+    def test_game_en_pessant(self):
+        self.game_file_test("1834324.pgn", "8/6r1/1p1p1k2/r2Pppb1/P1P2P1p/1B1K4/6RP/6R1 b - - 0 50")
+
     def test_game_checkmate(self):
         pgn = "1. Nc3 f5 2. e4 fxe4 3. Nxe4 Nf6 4. Nxf6+ gxf6 5. Qh5#"
         correct_hash = "rnbqkb1r/ppppp2p/5p2/7Q/8/8/PPPP1PPP/R1B1KBNR b KQkq - 1 5"
