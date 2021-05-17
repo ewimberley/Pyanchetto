@@ -35,8 +35,8 @@ class TestInterpreter(unittest.TestCase):
             example_path = "../examplepgn/"
         tree = parse_file(example_path + file)
         #print(tree.pretty())
-        #self.interpreter.execute(tree, True)
-        self.interpreter.execute(tree, False)
+        self.interpreter.execute(tree, True)
+        #self.interpreter.execute(tree, False)
         #print(self.board.fen())
         #print(self.board)
         #print(self.board.pgn())
@@ -68,6 +68,9 @@ class TestInterpreter(unittest.TestCase):
 
     def test_game_file7(self):
         self.game_file_test("1083898.pgn", "8/8/2K5/8/P5p1/3R1r1k/5P2/8 w - - 7 53")
+
+    def test_game_castle(self):
+        self.game_file_test("1801719.pgn", "8/8/2K5/8/P5p1/3R1r1k/5P2/8 w - - 7 53")
 
     def test_game_stalemate(self):
         self.game_file_test("1098027.pgn", "8/8/1K5p/3R2nk/P3B1p1/6P1/8/8 b - - 0 78")

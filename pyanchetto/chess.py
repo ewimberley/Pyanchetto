@@ -67,29 +67,44 @@ class Chess:
             self.init_player_pieces()
 
     def init_player_pieces(self):
-        self.player_pieces_list =[{c for c in all_coords if self.is_color(c, color)} for color in (WHITE, BLACK)]
+        self.player_pieces_list = [{c for c in all_coords if self.is_color(c, color)} for color in (WHITE, BLACK)]
+
 
     def coord(self, coord, piece=None):
+        """Returns the type of the piece at coord if piece is None, otherwise sets the location to the piece type."""
         if piece is None:
             return self.board[coord[1]][coord[0]]
         self.board[coord[1]][coord[0]] = piece
 
-    def is_color(self, coord, color): return self.color(coord) == color
+
+    def is_color(self, coord, color):
+        """Returns True if the color (player) of the piece at a location is the given color."""
+        return self.color(coord) == color
+
 
     def color(self, coord):
+        """Returns the color of the piece at a location (or the EMPTY color if no piece is at that location)."""
         piece_type = self.board[coord[1]][coord[0]]
         if piece_type == EMPTY:
             return EMPTY
         return WHITE if piece_type < 7 else BLACK
 
-    def is_type(self, coord, piece_type): return pieces[self.coord(coord)].lower() == piece_type.lower()
+
+    def is_type(self, coord, piece_type):
+        """Returns true if the piece at a location is the given type of piece."""
+        return pieces[self.coord(coord)].lower() == piece_type.lower()
+
 
     def player_pieces_of_type(self, piece_type, player):
         for coord in self.player_pieces_list[player - 1]:
             if self.coord(coord) in pieces_type_map[piece_type]:
                 yield coord
 
-    def player_pieces(self, player): return self.player_pieces_list[player - 1]
+
+    def player_pieces(self, player):
+        """Return a list of all pieces that belong to a player."""
+        return self.player_pieces_list[player - 1]
+
 
     def game_state(self):
         piece_moves = self.valid_moves_for_player(self.current_player, True)
@@ -101,14 +116,17 @@ class Chess:
             return CHECKMATE if check else STALEMATE
         return CHECK if check else NORMAL
 
+
     def valid_moves(self):
         threats = self.compute_threat_matrix(self.current_player)
         moves = self.valid_moves_for_player(self.current_player, True, threats)
         return moves
 
+
     def valid_moves_for_player(self, player, validate=True, threats=None):
         pieces = copy.deepcopy(self.player_pieces(player))
         return {piece: list(self.valid_piece_moves(piece, validate, threats)) for piece in pieces}
+
 
     def valid_piece_moves(self, p, validate=True, threats=None):
         # TODO detect check and checkmate
@@ -129,6 +147,7 @@ class Chess:
             for move in moves:
                 yield move
 
+
     def compute_threat_matrix(self, player, coord=None, max_threats=1000):
         threatened = np.zeros((8, 8), dtype=np.int8)
         for move in self._compute_threats(player):
@@ -138,6 +157,7 @@ class Chess:
                     if threatened[coord[1]][coord[0]] > max_threats:
                         return threatened
         return threatened
+
 
     def _compute_threats(self, player):
         pieces = copy.deepcopy(self.player_pieces(inverse_color(player)))
@@ -149,10 +169,12 @@ class Chess:
             for threat in self.pawn_threats(pawn[0], pawn[1]):
                 yield threat
 
+
     def check_check(self, player, threats=None):
         threats = self._compute_threats(player) if threats is None else threats
         king = list(self.player_pieces_of_type("K", player))
         return (king[0][0], king[0][1], True) in threats
+
 
     def move(self, from_coord, to_coord, validate=True, pgn_gen=True):
         if validate:
@@ -213,16 +235,19 @@ class Chess:
                 self.__handle_special(from_coord, to_coord)
             self.current_player = inverse_color(self.current_player)
             if pgn_gen and validate:
-                state = self.game_state()
-                modifier = None
-                if state == CHECK:
-                    modifier = "+"
-                elif state == CHECKMATE:
-                    modifier = "#"
-                if modifier is not None:
-                    self.pgn_str[-1] += modifier
+                self.append_game_state_to_pgn(pgn_gen, validate)
         else:
             raise BadMoveException("Move is invalid")
+
+    def append_game_state_to_pgn(self):
+        state = self.game_state()
+        modifier = None
+        if state == CHECK:
+            modifier = "+"
+        elif state == CHECKMATE:
+            modifier = "#"
+        if modifier is not None:
+            self.pgn_str[-1] += modifier
 
     def __move(self, from_coord, to_coord):
         from_color = self.color(from_coord)
@@ -235,6 +260,7 @@ class Chess:
         self.player_pieces_list[from_color - 1].add((to_coord[0], to_coord[1]))
         self.coord(to_coord, self.coord(from_coord))
         self.coord(from_coord, EMPTY)
+
 
     def __undo_last_move(self):
         last_move = self.move_list.pop()
@@ -262,6 +288,7 @@ class Chess:
             self.player_pieces_list[self.color(captured[1]) - 1].add(captured[1])
 
     def __handle_special(self, from_coord, to_coord):
+        """Handles one-off move types like en pessant and pawn promotion when applying a move."""
         if to_coord[3] == 6 or to_coord[3] == 12: #en pessant
             captured = (to_coord[0], from_coord[1])
             captured_color = self.color(captured)
@@ -281,10 +308,12 @@ class Chess:
             else:
                 raise BadPromotionException("Invalid promotion")
 
+
     def pawn_threats(self, f, r):
         color = self.color((f, r))
         for threat in self.__warps([], (f, r), pawn_capture_warps[color - 1], (color,)):
             yield threat
+
 
     def pawn(self, f, r):
         color = self.color((f, r))
@@ -309,13 +338,22 @@ class Chess:
                     else:
                         yield (last_move[0][0], r + 1, False, self.coord((f, r)))
 
-    def rook(self, f, r): return self.orthogonal([], f, r)
 
-    def bishop(self, f, r): return self.diagonal([], f, r)
+    def rook(self, f, r):
+        return self.orthogonal([], f, r)
 
-    def knight(self, f, r): return self.__warps([], (f, r), knight_warps, (self.color((f, r)),))
 
-    def queen(self, f, r): return self.orthogonal(self.diagonal([], f, r), f, r)
+    def bishop(self, f, r):
+        return self.diagonal([], f, r)
+
+
+    def knight(self, f, r):
+        return self.__warps([], (f, r), knight_warps, (self.color((f, r)),))
+
+
+    def queen(self, f, r):
+        return self.orthogonal(self.diagonal([], f, r), f, r)
+
 
     def king(self, f, r, threats=None):
         color = self.color((f, r))
@@ -328,12 +366,14 @@ class Chess:
         for move in self.__warps(castle_moves, (f, r), king_warps, (color,)):
             yield move
 
+
     def positions_clear(self, coords, threats=None):
         for coord in coords:
             status = 0 if threats is None else threats[coord[1]][coord[0]]
             if self.coord(coord) != 0 or status != 0:
                 return False
         return True
+
 
     def __warps(self, moves, coord, relative_warps, excluded, threat=True):
         for move in moves:
@@ -343,18 +383,107 @@ class Chess:
             if in_range(warp) and self.color(warp) not in excluded:
                 yield warp
 
-    def orthogonal(self, moves, f, r): return self.__vectors(moves, f, r, [(1, 0), (-1, 0), (0, 1), (0, -1)])
 
-    def diagonal(self, moves, f, r): return self.__vectors(moves, f, r, [(1, 1), (-1, -1), (1, -1), (-1, 1)])
+    def orthogonal(self, moves, f, r):
+        """
+        Compute move set for a piece that has orthogonal (horizontal and vertical) movement.
+
+        Parameters
+        ----------
+        moves: list of tuples
+            A set of moves to append diagonal moves to.
+
+        f: int
+            The current file of the piece.
+
+        r: int
+            The current rank of the piece.
+            
+        Returns
+        _______
+        moves: list of tuples
+            The input list of moves with orthogonal moves appended to it.
+        """
+        return self.__vectors(moves, f, r, [(1, 0), (-1, 0), (0, 1), (0, -1)])
+
+
+    def diagonal(self, moves, f, r):
+        """
+        Compute move set for a piece that has orthogonal (horizontal and vertical) movement.
+
+        Parameters
+        ----------
+        moves: list of tuples
+            A set of moves to append diagonal moves to.
+
+        f: int
+            The current file of the piece.
+
+        r: int
+            The current rank of the piece.
+            
+        Returns
+        _______
+        moves: list of tuples
+            The input list of moves with diagonal moves appended to it.
+        """
+        return self.__vectors(moves, f, r, [(1, 1), (-1, -1), (1, -1), (-1, 1)])
+
 
     def __vectors(self, moves, f, r, offsets_list):
+        """
+        Generates moves going in a list of vectors from a starting position until
+        either the edge of the board or another piece is encountered.
+
+        Parameters
+        ----------
+        moves: list of tuples
+            A set of moves to append moves to.
+
+        f: int
+            The current file of the piece.
+
+        r: int
+            The current rank of the piece.
+
+        offsets_list: list of tuples
+            A list of vectors to travel in (e.g. if start is (0,0) and vector is (1,1)
+            move set will be (0,0), (1,1), (2,2), (3,3), etc.
+            
+        Returns
+        _______
+        moves: list of tuples
+            The input list of moves with vectored moves appended to it.
+        """
         for move in moves:
             yield move
         for offset in offsets_list:
             for move in self.__vector(f, r, offset):
                 yield move
 
+
     def __vector(self, f, r, offset):
+        """
+        Generates moves going in a single vector from a starting position until
+        either the edge of the board or another piece is encountered.
+
+        Parameters
+        ----------
+        f: int
+            The current file of the piece
+
+        r: int
+            The current rank of the piece
+
+        offset: tuple
+            A vector to travel in (e.g. if start is (0,0) and vector is (1,1)
+            move set will be (0,0), (1,1), (2,2), (3,3), etc.
+            
+        Returns
+        _______
+        moves: list of tuples
+            The input list of moves with vectored moves appended to it.
+        """
         color = self.color((f, r))
         inv_color = inverse_color(color)
         coord = (f + offset[1], r + offset[0], True)
@@ -364,19 +493,24 @@ class Chess:
                 break
             coord = (offset[1] + coord[0], offset[0] + coord[1], coord[2])
 
+
     def __type_in_coords(self, coords, type):
         for coord in coords:
             if self.coord(coord) == type:
                 yield coord
 
+
     def __set_row(self, row, row_pieces):
         map2(lambda col: self.coord((col, row), pieces_index[row_pieces[col]]), [col for col in range(SIZE)])
+
 
     def __str__(self):
         piece_arr = [pieces_ascii[self.coord((coord[1], SIZE - coord[0] - 1))] for coord in all_coords]
         return "".join([" ".join(piece_arr[i*SIZE:i*SIZE+SIZE])+"\n" for i in range(SIZE)])
 
+
     def fen(self):
+        """Return the FEN hash string for the current state of the game."""
         hash = []
         for i, coord in enumerate(all_coords):
             p_type = self.coord((coord[1], SIZE - coord[0] - 1))
@@ -390,7 +524,6 @@ class Chess:
             else:
                 hash.append(pieces[p_type])
         hash.append(" w " if self.current_player == WHITE else " b ")
-
         hash_len = len(hash)
         if self.kings_moved[0] == -1:
             if self.rooks_moved[0] == -1:
@@ -418,8 +551,10 @@ class Chess:
         hash.append(" " + str(full_moves))
         return "".join(hash)
 
+
     def get_full_move_clock(self):
         return math.floor(len(self.move_list) / 2) + 1
+
 
     def get_half_move_clock(self):
         move_index = len(self.move_list)
@@ -435,5 +570,7 @@ class Chess:
         else:
             return 0
 
+
     def pgn(self):
+        """Return the PGN string for the current state of the game."""
         return " ".join(self.pgn_str)
