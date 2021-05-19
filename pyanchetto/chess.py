@@ -48,6 +48,7 @@ class Chess:
             self.board = np.copy(other.board)
             self.rooks_moved = copy.deepcopy(other.rooks_moved)
             self.kings_moved = copy.deepcopy(other.kings_moved)
+            self.kings_castled = copy.deepcopy(other.kings_castled)
             self.current_player = other.current_player
             self.move_list = copy.deepcopy(other.move_list)
             self.pgn_str = copy.deepcopy(other.pgn_str)
@@ -56,7 +57,7 @@ class Chess:
             self.player_pieces_list = copy.deepcopy(other.player_pieces_list)
         else:
             self.board = np.zeros((8, 8), dtype=np.int8)
-            self.rooks_moved, self.kings_moved = [-1, -1, -1, -1], [-1, -1]
+            self.rooks_moved, self.kings_moved, self.kings_castled = [-1, -1, -1, -1], [-1, -1], [-1, -1]
             self.current_player = 1
             self.move_list, self.pgn_str = [], []
             self.captured_pieces, self.promoted_pieces = {}, {}
@@ -149,6 +150,27 @@ class Chess:
 
 
     def compute_threat_matrix(self, player, coord=None, max_threats=1000):
+        """
+        Computes a matrix that represents the number of pieces threatening each square on the board.
+        A coordinate and maximum number of threats can be specified if the focus is a specific coordinate. This allows
+        for early return of the method as an optimization if the querying function only needs to know whether or not a
+        particular coordinate is threatened.
+
+        Parameters
+        ----------
+        player: int
+            The player being threatened (usually the current player).
+
+        coord: tuple
+            Return early if the threat to this coordinate is greater than max_threats.
+
+        max_threats: int (optional, default 1000)
+            Return early if threats to coord are greater than this.
+
+        Returns
+        _______
+        A matrix indicating the number of threats to each coordinate on the board.
+        """
         threatened = np.zeros((8, 8), dtype=np.int8)
         for move in self._compute_threats(player):
             if move[2]:
@@ -171,6 +193,10 @@ class Chess:
 
 
     def check_check(self, player, threats=None):
+        """
+        Determines if a player is currently in check.
+        A precomputed threat matrix can be provided as an optimization.
+        """
         threats = self._compute_threats(player) if threats is None else threats
         king = list(self.player_pieces_of_type("K", player))
         return (king[0][0], king[0][1], True) in threats
@@ -180,6 +206,8 @@ class Chess:
         if validate:
             threats = self.compute_threat_matrix(self.current_player) if self.is_type(from_coord, "K") else None
             valid_moves = self.valid_piece_moves(from_coord, True, threats) if self.is_color(from_coord, self.current_player) else {}
+            #below line used for debugging valid moves only
+            #valid_moves = list(valid_moves)
         if not validate or to_coord in valid_moves:
             pgn_castle, pgn_promotion, file_disambiguation, rank_disambiguation = None, "", "", ""
             if self.is_type(from_coord, "K") and from_coord in king_positions:
@@ -227,15 +255,17 @@ class Chess:
                     self.kings_moved[king_index] = len(self.move_list)
                 if to_coord in king_castle_end_positions:
                     rook_index = king_castle_end_positions_index[to_coord]
+                    #FIXME below doesn't update rooks_moved?
                     self.__move(rook_positions[rook_index], rook_castle_end_positions[rook_index])
                     castle_pos_index = king_castle_end_positions.index(to_coord)
+                    #FIXME use self.kings_castled to indicate turn of castle
             self.__move(from_coord, to_coord)
             self.move_list.append((from_coord, (to_coord[0], to_coord[1])))
             if len(to_coord) == 4:
                 self.__handle_special(from_coord, to_coord)
             self.current_player = inverse_color(self.current_player)
             if pgn_gen and validate:
-                self.append_game_state_to_pgn(pgn_gen, validate)
+                self.append_game_state_to_pgn()
         else:
             raise BadMoveException("Move is invalid")
 
@@ -275,7 +305,7 @@ class Chess:
             if self.kings_moved[king_positions.index(last_move[0])] == last_move_index:
                 self.kings_moved[king_positions.index(last_move[0])] = -1
                 king_pos = (last_move[1][0], last_move[1][1], False)
-                if king_pos in king_castle_end_positions: #last move was castle
+                if king_pos in king_castle_end_positions: #XXX use self.king_castled instead
                     rook_index = king_castle_end_positions_index[king_pos]
                     rook_pos = rook_castle_end_positions[rook_index]
                     self.__move((rook_pos[0], rook_pos[1]), rook_positions[rook_index])
@@ -316,6 +346,7 @@ class Chess:
 
 
     def pawn(self, f, r):
+        """Returns all valid moves for a pawn at file f and rank r including en pessant and valid promotions."""
         color = self.color((f, r))
         warps = [[(0, 1), (0, 2)] if r == 1 and self.is_color((f, r + 1), EMPTY) else [(0, 1)]]
         warps.append([(0, -1), (0, -2)] if r == 6 and self.is_color((f, r - 1), EMPTY) else [(0, -1)])
@@ -340,27 +371,33 @@ class Chess:
 
 
     def rook(self, f, r):
+        """Returns all valid moves for a rook at file f and rank r."""
         return self.orthogonal([], f, r)
 
 
     def bishop(self, f, r):
+        """Returns all valid moves for a bishop at file f and rank r."""
         return self.diagonal([], f, r)
 
 
     def knight(self, f, r):
+        """Returns all valid moves for a knight at file f and rank r."""
         return self.__warps([], (f, r), knight_warps, (self.color((f, r)),))
 
 
     def queen(self, f, r):
+        """Returns all valid moves for a queen at file f and rank r."""
         return self.orthogonal(self.diagonal([], f, r), f, r)
 
 
     def king(self, f, r, threats=None):
+        """Returns all valid moves for a king at file f and rank r including castling (does not allow king to move into check or checkmate)."""
         color = self.color((f, r))
         castle_moves = []
         if self.kings_moved[color - 1] == -1:
-            if self.rooks_moved[0 if color == WHITE else 2] == -1 and self.positions_clear([(1, r), (2, r), (3, r)], threats):
-                castle_moves.append((2, r, False))
+            #if self.rooks_moved[0 if color == WHITE else 2] == -1 and self.positions_clear([(1, r), (2, r), (3, r)], threats): #king does not move through (1, r)?
+            if self.rooks_moved[0 if color == WHITE else 2] == -1 and self.positions_clear([(2, r), (3, r)], threats):
+                    castle_moves.append((2, r, False))
             if self.rooks_moved[1 if color == WHITE else 3] == -1 and self.positions_clear([(5, r), (6, r)], threats):
                 castle_moves.append((6, r, False))
         for move in self.__warps(castle_moves, (f, r), king_warps, (color,)):
@@ -368,6 +405,21 @@ class Chess:
 
 
     def positions_clear(self, coords, threats=None):
+        """
+        Determines if all coordinates in coords list are clear of both pieces and threats.
+
+        Parameters
+        ----------
+        coords: list of tuples
+            A list of coordinates to check for pieces and threats
+
+        threats: matrix object
+            A board matrix containing the number of threats per square
+
+        Returns
+        _______
+        True if none of the coords contain a piece or are threatened, False otherwise.
+        """
         for coord in coords:
             status = 0 if threats is None else threats[coord[1]][coord[0]]
             if self.coord(coord) != 0 or status != 0:
