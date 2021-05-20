@@ -87,6 +87,7 @@ class ChessInterpreter():
     def find_piece_for_move(self, required_file, required_rank, threaten):
         of_type = self.board.player_pieces_of_type(self.piece, self.board.current_player)
         logging.debug("Looking for a " + str(self.piece) + " that can move to " + str(self.to_coord))
+        of_type = list(of_type) #FIXME figure out why this works and generator doesn't
         for piece in of_type:
             if required_file != -1:
                 if piece[0] != required_file:
