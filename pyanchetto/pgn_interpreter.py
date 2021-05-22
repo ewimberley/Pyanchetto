@@ -4,6 +4,9 @@ from pyanchetto.chess import rank_file_to_coord, file_to_index
 WHITE = 1
 BLACK = 2
 
+class PGNSyntaxError(Exception):
+    pass
+
 def child_index_is_type(tree, index, type):
     return tree.children[index].data == type
 
@@ -31,11 +34,15 @@ class ChessInterpreter():
                 self.turn(child)
 
     def turn(self, tree):
-        self.turn_number = int(tree.children[0])
+        self.turn_number = int(tree.children[0].children[0])
         logging.info("Turn: " + str(self.turn_number))
-        self.move(tree.children[1])
-        if len(tree.children) == 3:
-            self.move(tree.children[2])
+        on_move = 0
+        for child in tree.children:
+            if child.data == "move":
+                if on_move == 2:
+                    raise PGNSyntaxError("More than two pieces moved in one turn.")
+                self.move(child)
+                on_move += 1
 
     def move(self, tree):
         required_file = -1

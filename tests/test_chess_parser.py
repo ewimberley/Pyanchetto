@@ -46,6 +46,14 @@ class TestParser(unittest.TestCase):
         move = "5. Qh5#"
         self.parse(move)
 
+    def test_comment(self):
+        move = "1. Nc3 {test1} f5 { test2 }"
+        self.parse(move)
+
+    def test_non_standard_move_numbers(self):
+        move = "1... Nc3 1. f5"
+        self.parse(move)
+
     def test_complex(self):
         move = "1. Nc3 f5 2. e4 fxe4 3. Nxe4 Nf6 4. Nxf6+ gxf6 5. Qh5#"
         self.parse(move)

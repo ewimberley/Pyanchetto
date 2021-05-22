@@ -72,6 +72,9 @@ class TestInterpreter(unittest.TestCase):
     def test_game_file8(self):
         self.game_file_test("1807350.pgn", "8/8/5k2/5b2/R6K/8/8/6r1 b - - 113 172")
 
+    def test_game_inline_comment(self):
+        self.game_file_test("1290173.pgn", "5R2/1p5k/1qnP2p1/p1p4p/1nQ5/6P1/1P5P/6K1 w - - 0 35")
+
     def test_game_castle(self):
         self.game_file_test("1801719.pgn", "8/1p2kppp/2r1b3/2p1p3/2P5/1P2B3/P4PPP/2KR4 b - - 0 22")
 

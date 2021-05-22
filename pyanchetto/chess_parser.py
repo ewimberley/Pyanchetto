@@ -5,11 +5,11 @@ import os
 grammar = """
     start: pgn
     
-    pgn: metadata* turn*
+    pgn: metadata* turn* outcome?
     
     metadata: "[" WORD ESCAPED_STRING "]" NEWLINE
 
-    turn: " "? INT "." " "? move " "? move? 
+    turn: (move_number move " "? inline_comment?) (move_number? move " "? inline_comment?)?
             
     move: piece_type disambiguation? capture? coord move_modifiers?
         | file capture? coord move_modifiers?
@@ -17,6 +17,8 @@ grammar = """
         | king_side_castle move_modifiers?
         | queen_side_castle move_modifiers?
         | queen_side_castle move_modifiers?
+    
+    move_number: " "? INT "."* " "?
     
     piece_type: "K" -> k | "Q" -> q | "R" -> r | "B" -> b | "N" -> n | "P" -> p 
     
@@ -40,7 +42,7 @@ grammar = """
             
     capture: "x"
             
-    move_modifiers: checks? quality? winning? outcome?
+    move_modifiers: checks? quality? winning? //outcome?
     
     checks: "+" -> check | "#" -> checkmate
     
@@ -49,6 +51,8 @@ grammar = """
     winning: "+-" | "+/-" | "+/=" | "=" | "=/+" | "-/+" | "-+"
     
     outcome: "1-0" -> white_win | "1/2-1/2" -> draw | "0-1" -> black_win
+    
+    inline_comment: /\{[^\}]*\}/s 
             
     %import common.INT 
     %import common.WORD   

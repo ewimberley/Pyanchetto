@@ -1,0 +1,50 @@
+[Event "Sunday Times Schools' match"]
+[Site "Dulwich"]
+[Date "1965.??.??"]
+[EventDate "?"]
+[Round "?"]
+[Result "1-0"]
+[White "Raymond Keene"]
+[Black "Andrew Jonathan Whiteley"]
+[ECO "A07"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[PlyCount "68"]
+
+1. Nf3 { Notes by Raymond Keene. } d5 2. g3 Nf6 3. Bg2 Bf5
+4. d3 {More vigorous is 4 c4!} 4...e6 5. O-O c6 6. Nbd2 h6
+7. Qe1 {An artificial-looking move, but White wants to play
+e2-e4 as rapidly as possible.} 7...Nbd7 8. e4 Bh7 {Here Black
+should consider ...dxe4, removing one of the obstacles to his
+queen's bishop from the h7-b1 diagonal.} 9. Qe2 Bc5 10. e5 Ng8
+11. Nb3 Bb6 12. a4 a5 13. Be3 {?! A more direct, and superior,
+course is 13 Nfd4 Ne7 14 Kh1 Nf5 15 Nxf5 Bxf5 16 f4 O-O 17 g4
+Bh7 18 f5 +/-.} 13...Ne7 14. Bxb6 Qxb6 15. Nbd4 O-O 16. Bh3
+{Threatening Nxe6. Black's reply parries this but surrenders
+the b5 square to a white knight.} 16...c5 17. Nb5 Nc6 18. Rad1
+Rac8 19. c4 Nb4 20. Ne1 {Preparing an advance of the f-pawn,
+but it is very slow.} 20...Nb8 {!} 21. f4 N8c6 22. Nf3 dxc4
+23. dxc4 Bc2 {? Black vents his spleen on an irrelevant
+pawn. Instead of this the logical 23...Nd4! is fine for him.}
+24. Rd6 Bxa4 25. f5 exf5 26. Bxf5 Rcd8 27. Ng5 {!? The start
+of a remarkable combination which, unfortunately, should only
+draw. The obvious solution 27 e6 would, in fact, have been the
+most effective course.} 27...Bxb5 {Clearly 27...hxg5 28 Qh5 g6
+29 Rxg6+ is +-.} 28. Bh7+ Kh8 29. Nxf7+ Rxf7 {If 29...Kxh7
+White wins with a stepladder manoeuvre: 30 Rxh6+! gxh6 31 Qe4+
+Kg7 32 Qg4+ Kh7 33 Qf5+ Kg7 34 Qf6+ etc.} 30. Rxf7 30...Rxd6
+{? Black goes astray in the complications; if 30...Kxh7? White
+delivers mate with a queen sacrifice as follows: 31 Qg4 Rg8 32
+Qg6+ Kh8 33 Qxh6+ gxh6 34 Rxh6 mate. However, the best defence
+is the fantastic 30...Bxc4!! 31 Qxc4 Nxe5 when White is the
+exchange ahead but all of his pieces are en prise. I don't
+blame Andrew Whiteley for missing this! After 31...Nxe5 the
+position burns out to a draw; e.g. 32 Rxb6 Nxc4 33 Rbxb7 Kxh7
+34 Rxg7+ or 33...Nd6 34 Bg6 with sufficient compensation for
+the pawn.} 31. exd6 Bxc4 {One move too late; 31...Kxh7 still
+loses (mundanely now) to 32 Qg4.} 32. Rf8+ Kxh7 33. Qe4+ g6
+34. Qxc4 h5 {Since 35 Qf7+ Kh6 36 Rh8+ Kg5 37 Qf4 is mate. I
+have to confess that I played the combination starting with 27
+Ng5!? like a somnambulist. The whole thing was purely
+instinctive and I found the tactical variations several days
+after the game had been played.} 1-0
