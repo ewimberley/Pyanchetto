@@ -12,7 +12,7 @@ grammar = """
     turn: (move_number move " "? inline_comment?) (move_number? move " "? inline_comment?)?
             
     move: piece_type disambiguation? capture? coord move_modifiers?
-        | file capture? coord move_modifiers?
+        | file capture? coord promotion? move_modifiers?
         | coord promotion? move_modifiers?
         | king_side_castle move_modifiers?
         | queen_side_castle move_modifiers?

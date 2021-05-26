@@ -1,5 +1,5 @@
-import logging
-from pyanchetto.chess import rank_file_to_coord, file_to_index
+import logging, traceback
+from pyanchetto.chess import rank_file_to_coord, file_to_index, coord_to_notation
 
 WHITE = 1
 BLACK = 2
@@ -31,9 +31,9 @@ class ChessInterpreter():
     def pgn(self, tree):
         for child in tree.children:
             if child.data == "turn":
-                self.turn(child)
+                self.move(child)
 
-    def turn(self, tree):
+    def move(self, tree):
         self.turn_number = int(tree.children[0].children[0])
         logging.info("Turn: " + str(self.turn_number))
         on_move = 0
@@ -41,10 +41,10 @@ class ChessInterpreter():
             if child.data == "move":
                 if on_move == 2:
                     raise PGNSyntaxError("More than two pieces moved in one turn.")
-                self.move(child)
+                self.player_turn(child)
                 on_move += 1
 
-    def move(self, tree):
+    def player_turn(self, tree):
         required_file = -1
         required_rank = -1
         threaten = True
@@ -89,11 +89,16 @@ class ChessInterpreter():
             logging.info("\n" + str(self.board))
         except Exception as e:
             logging.exception("Failed to apply move.")
+            traceback.print_exc()
             raise e
 
     def find_piece_for_move(self, required_file, required_rank, threaten):
+        """
+        Find the piece referred to by the PGN notation for a turn when the notation is ambiguous (e.g. only a
+        file or rank are provided, or just a piece type and destination.
+        """
         of_type = self.board.player_pieces_of_type(self.piece, self.board.current_player)
-        logging.debug("Looking for a " + str(self.piece) + " that can move to " + str(self.to_coord))
+        logging.debug(f"Looking for a {self.piece} that can move to {self.to_coord} / {coord_to_notation(self.to_coord)}")
         of_type = list(of_type) #FIXME figure out why this works and generator doesn't
         for piece in of_type:
             if required_file != -1:

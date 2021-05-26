@@ -49,41 +49,50 @@ class TestInterpreter(unittest.TestCase):
         assert board2.fen() == correct_hash
 
     def test_game_file(self):
-        self.game_file_test("1000144.pgn", "8/8/8/7p/5k1P/7K/7P/8 w - - 1 76")
+        self.game_file_test("test_game1.pgn", "8/8/8/7p/5k1P/7K/7P/8 w - - 1 76")
 
     def test_game_file2(self):
-        self.game_file_test("1001718.pgn", "4r3/7P/6K1/8/8/3k4/8/8 b - - 2 62")
+        self.game_file_test("test_game2.pgn", "4r3/7P/6K1/8/8/3k4/8/8 b - - 2 62")
 
     def test_game_file3(self):
-        self.game_file_test("1001517.pgn", "8/p7/k7/7K/6P1/5P2/8/8 b - - 0 63")
+        self.game_file_test("test_game3.pgn", "8/p7/k7/7K/6P1/5P2/8/8 b - - 0 63")
 
     def test_game_file4(self):
-        self.game_file_test("1118824.pgn", "8/1r6/5R2/4pP2/4P3/1pkP1K2/8/8 w - - 1 62")
+        self.game_file_test("test_game4.pgn", "8/1r6/5R2/4pP2/4P3/1pkP1K2/8/8 w - - 1 62")
 
     def test_game_file5(self):
-        self.game_file_test("1169775.pgn", "r1b1r1k1/1p3ppp/p4n2/8/P2p4/4PB1P/1PQ2PPb/R2RBKNq w - - 4 22")
+        self.game_file_test("test_game5.pgn", "r1b1r1k1/1p3ppp/p4n2/8/P2p4/4PB1P/1PQ2PPb/R2RBKNq w - - 4 22")
 
     def test_game_file6(self):
-        self.game_file_test("1118829.pgn", "6R1/8/5k2/6pK/7p/3P2rP/8/8 w - - 13 101")
+        self.game_file_test("test_game6.pgn", "6R1/8/5k2/6pK/7p/3P2rP/8/8 w - - 13 101")
 
     def test_game_file7(self):
-        self.game_file_test("1083898.pgn", "8/8/2K5/8/P5p1/3R1r1k/5P2/8 w - - 7 53")
+        self.game_file_test("test_game7.pgn", "8/8/2K5/8/P5p1/3R1r1k/5P2/8 w - - 7 53")
 
     def test_game_file8(self):
-        self.game_file_test("1807350.pgn", "8/8/5k2/5b2/R6K/8/8/6r1 b - - 113 172")
+        self.game_file_test("test_game8.pgn", "8/8/5k2/5b2/R6K/8/8/6r1 b - - 113 172")
+
+    def test_game_file9(self):
+        self.game_file_test("test_game9.pgn", "8/8/3k2p1/P6p/3pp3/P3b3/2K3PP/4R3 b - - 1 37")
+
+    def test_game_promotion_and_check(self):
+        self.game_file_test("test_promotion_and_check.pgn", "8/6p1/p3k2p/1P6/5KP1/2N5/8/8 b - - 0 51")
 
     def test_game_inline_comment(self):
-        self.game_file_test("1290173.pgn", "5R2/1p5k/1qnP2p1/p1p4p/1nQ5/6P1/1P5P/6K1 w - - 0 35")
+        self.game_file_test("test_inline_comment.pgn", "5R2/1p5k/1qnP2p1/p1p4p/1nQ5/6P1/1P5P/6K1 w - - 0 35")
 
     def test_game_castle(self):
-        self.game_file_test("1801719.pgn", "8/1p2kppp/2r1b3/2p1p3/2P5/1P2B3/P4PPP/2KR4 b - - 0 22")
+        self.game_file_test("test_castle.pgn", "8/1p2kppp/2r1b3/2p1p3/2P5/1P2B3/P4PPP/2KR4 b - - 0 22")
 
     def test_game_stalemate(self):
-        self.game_file_test("1098027.pgn", "8/8/1K5p/3R2nk/P3B1p1/6P1/8/8 b - - 0 78")
+        self.game_file_test("test_stalemate.pgn", "8/8/1K5p/3R2nk/P3B1p1/6P1/8/8 b - - 0 78")
         assert self.board.game_state() == STALEMATE
 
     def test_game_en_pessant(self):
-        self.game_file_test("1834324.pgn", "8/6r1/1p1p1k2/r2Pppb1/P1P2P1p/1B1K4/6RP/6R1 b - - 0 50")
+        self.game_file_test("test_en_pessant.pgn", "8/6r1/1p1p1k2/r2Pppb1/P1P2P1p/1B1K4/6RP/6R1 b - - 0 50")
+
+    def test_game_promotion(self):
+        self.game_file_test("test_promotion.pgn", "3r2k1/p2P1p2/2Q3b1/7p/4q3/2P1b3/PP6/K6R w - - 1 36")
 
     def test_game_checkmate(self):
         pgn = "1. Nc3 f5 2. e4 fxe4 3. Nxe4 Nf6 4. Nxf6+ gxf6 5. Qh5#"

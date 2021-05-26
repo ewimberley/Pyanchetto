@@ -1,6 +1,8 @@
-import numpy as np
 import copy
+import logging
 import math
+
+import numpy as np
 
 SIZE = 8
 piece_types = ("K", "Q", "R", "B", "N", "P")
@@ -138,12 +140,16 @@ class Chess:
         if validate:
             player = self.current_player
             for move in moves: #simulate to prevent moving into check
-                self.move(p, move, False, False)
-                if not self.check_check(player):
-                    self.__undo_last_move()
-                    yield move
-                else:
-                    self.__undo_last_move()
+                try:
+                    self.move(p, move, False, False)
+                    if not self.check_check(player):
+                        self.__undo_last_move()
+                        yield move
+                    else:
+                        self.__undo_last_move()
+                except Exception as e:
+                    logging.exception("Failure occurred during move simulation to look for check condition.")
+                    raise e
         else:
             for move in moves:
                 yield move
@@ -197,6 +203,7 @@ class Chess:
         Determines if a player is currently in check.
         A precomputed threat matrix can be provided as an optimization.
         """
+        #XXX can we use the optimized threats function to just check the king square?
         threats = self._compute_threats(player) if threats is None else threats
         king = list(self.player_pieces_of_type("K", player))
         return (king[0][0], king[0][1], True) in threats
@@ -251,14 +258,17 @@ class Chess:
                     self.rooks_moved[rook_index] = len(self.move_list)
             elif self.is_type(from_coord, "K") and from_coord in king_positions:
                 king_index = king_positions.index(from_coord)
+                on_move = len(self.move_list)
                 if self.kings_moved[king_index] == -1:
-                    self.kings_moved[king_index] = len(self.move_list)
-                if to_coord in king_castle_end_positions:
+                    self.kings_moved[king_index] = on_move
+                if to_coord in king_castle_end_positions and self.kings_moved[king_index] == on_move:
                     rook_index = king_castle_end_positions_index[to_coord]
-                    #FIXME below doesn't update rooks_moved?
-                    self.__move(rook_positions[rook_index], rook_castle_end_positions[rook_index])
-                    castle_pos_index = king_castle_end_positions.index(to_coord)
-                    #FIXME use self.kings_castled to indicate turn of castle
+                    rook_position = rook_positions[rook_index]
+                    if self.is_type(rook_position, "R") and self.is_color(rook_position, self.current_player):
+                        self.rooks_moved[rook_index] = on_move
+                        self.__move(rook_position, rook_castle_end_positions[rook_index])
+                        castle_pos_index = king_castle_end_positions.index(to_coord)
+                        self.kings_castled[king_index] = on_move
             self.__move(from_coord, to_coord)
             self.move_list.append((from_coord, (to_coord[0], to_coord[1])))
             if len(to_coord) == 4:
@@ -305,10 +315,14 @@ class Chess:
             if self.kings_moved[king_positions.index(last_move[0])] == last_move_index:
                 self.kings_moved[king_positions.index(last_move[0])] = -1
                 king_pos = (last_move[1][0], last_move[1][1], False)
-                if king_pos in king_castle_end_positions: #XXX use self.king_castled instead
+                #if king_pos in king_castle_end_positions: #XXX use self.king_castled instead
+                if last_move_index in self.kings_castled: #undo castle
                     rook_index = king_castle_end_positions_index[king_pos]
+                    king_index = self.current_player - 1
                     rook_pos = rook_castle_end_positions[rook_index]
                     self.__move((rook_pos[0], rook_pos[1]), rook_positions[rook_index])
+                    self.rooks_moved[rook_index] = -1
+                    self.kings_castled[king_index] = -1
         elif last_move_index in self.promoted_pieces:
             self.coord(last_move[1], 6 if self.current_player == WHITE else 12)
             self.promoted_pieces.pop(last_move_index)
