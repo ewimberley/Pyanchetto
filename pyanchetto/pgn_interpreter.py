@@ -16,6 +16,7 @@ class ChessInterpreter():
         self.board = board
         self.turn_number = 0
         self.verbose = False
+        self.metadata_map = {}
 
     def execute(self, tree, verbose):
         #TODO set logging level based on verbose
@@ -28,10 +29,16 @@ class ChessInterpreter():
             logging.getLogger().setLevel(logging.WARN)
         self.pgn(tree.children[0])
 
+
     def pgn(self, tree):
         for child in tree.children:
             if child.data == "turn":
                 self.move(child)
+            elif child.data == "metadata":
+                self.metadata(child)
+
+    def metadata(self, tree):
+        self.metadata_map[str(tree.children[0])] = str(tree.children[1])
 
     def move(self, tree):
         self.turn_number = int(tree.children[0].children[0])

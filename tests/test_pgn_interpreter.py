@@ -75,6 +75,9 @@ class TestInterpreter(unittest.TestCase):
     def test_game_file9(self):
         self.game_file_test("test_game9.pgn", "8/8/3k2p1/P6p/3pp3/P3b3/2K3PP/4R3 b - - 1 37")
 
+    def test_game_file_nag(self):
+        self.game_file_test("test_game_numeric_annotation_glyph.pgn", "rnbq3r/pppp2pp/2N1kP2/2n3B1/1b6/3P4/PP2QPPP/RN1K1B1R b - - 4 11")
+
     def test_game_promotion_and_check(self):
         self.game_file_test("test_promotion_and_check.pgn", "8/6p1/p3k2p/1P6/5KP1/2N5/8/8 b - - 0 51")
 

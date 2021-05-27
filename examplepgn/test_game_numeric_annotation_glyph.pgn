@@ -1,0 +1,16 @@
+[Event "Simul, 57b"]
+[Site "Houston, TX USA"]
+[Date "1964.03.28"]
+[EventDate "1964.03.28"]
+[Round "?"]
+[Result "1-0"]
+[White "Robert James Fischer"]
+[Black "Robert Chalker"]
+[ECO "C43"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[PlyCount "21"]
+
+1. e4 e5 2. Nf3 Nf6 3. d4 exd4 4. e5 Ne4 5. Qe2 Bb4+ 6. Kd1
+6... Nc5 $4 7. Bg5 d3 8. cxd3 f6 9. exf6+ Kf7 10. Ne5+ Ke6
+11. Nc6+ 1-0

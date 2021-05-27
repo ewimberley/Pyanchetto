@@ -9,7 +9,7 @@ grammar = """
     
     metadata: "[" WORD ESCAPED_STRING "]" NEWLINE
 
-    turn: (move_number move " "? inline_comment?) (move_number? move " "? inline_comment?)?
+    turn: (move_number move " "? anno_glyph? inline_comment?) (move_number? move " "? anno_glyph? inline_comment?)?
             
     move: piece_type disambiguation? capture? coord move_modifiers?
         | file capture? coord promotion? move_modifiers?
@@ -43,6 +43,8 @@ grammar = """
     capture: "x"
             
     move_modifiers: checks? quality? winning? //outcome?
+    
+    anno_glyph: "$" INT
     
     checks: "+" -> check | "#" -> checkmate
     
