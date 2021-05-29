@@ -110,6 +110,8 @@ class Chess:
 
 
     def game_state(self):
+        #TODO threefold repetition and fifty move rule?
+        #FIXME check for impossible checkmate (king/king, king/bishop, king/knight, king/bishop v king/bishop of same color
         piece_moves = self.valid_moves_for_player(self.current_player, True)
         moves = []
         for piece in piece_moves:
