@@ -42,7 +42,10 @@ class ChessInterpreter():
 
 
     def metadata(self, tree):
-        self.metadata_map[str(tree.children[0])] = str(tree.children[1])
+        value = str(tree.children[1])
+        if value.startswith("\""):
+            value = value[1:-1]
+            self.metadata_map[str(tree.children[0])] = value
 
     def move(self, tree):
         self.turn_number = int(tree.children[0].children[0])
