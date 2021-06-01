@@ -12,6 +12,7 @@ pieces_type_map = {p_type: (pieces_index[p_type], pieces_index[p_type.lower()]) 
 pieces_ascii = (".", "♔", "♕", "♖", "♗", "♘", "♙", "♚", "♛", "♜", "♝", "♞", "♟")
 home_row = ["R", "N", "B", "Q", "K", "B", "N", "R"]
 promotion_candidates = ("Q", "R", "B", "N")
+game_termination_markers = ["1/2-1/2", "1-0", "0-1", "*"] #draw, white, black, ongoing/abandonded
 rook_positions = [(0, 0), (7, 0), (0, 7), (7, 7)]
 rook_positions_index = {rook_positions[i]: i for i in range(len(rook_positions))}
 king_positions = [(4, 0), (4, 7)]
@@ -110,6 +111,7 @@ class Chess:
 
 
     def game_state(self):
+        #FIXME cache the result of this and invalidate the cache when a move is made
         #TODO threefold repetition and fifty move rule?
         #FIXME check for impossible checkmate (king/king, king/bishop, king/knight, king/bishop v king/bishop of same color
         piece_moves = self.valid_moves_for_player(self.current_player, True)
@@ -282,6 +284,11 @@ class Chess:
             raise BadMoveException("Move is invalid")
 
     def append_game_state_to_pgn(self):
+        """
+        Append information related to game state to the PGN move list, including
+        move annotations and game termination markers.
+        Preconditions: a move has just been made and current_player has been updated to the next player.
+        """
         state = self.game_state()
         modifier = None
         if state == CHECK:
@@ -290,6 +297,11 @@ class Chess:
             modifier = "#"
         if modifier is not None:
             self.pgn_str[-1] += modifier
+            if state == CHECKMATE:
+                self.pgn_str.append(game_termination_markers[inverse_color(self.current_player)])
+            if state == STALEMATE:
+                self.pgn_str.append(game_termination_markers[0])
+
 
     def __move(self, from_coord, to_coord):
         from_color = self.color(from_coord)

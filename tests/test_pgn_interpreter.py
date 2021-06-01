@@ -27,8 +27,10 @@ class TestInterpreter(unittest.TestCase):
         interpreter2 = ChessInterpreter(board2)
         interpreter2.execute(tree2, False)
         assert board2.fen() == correct_hash
+        return self.board.fen(), self.board.pgn()
 
     def game_file_test(self, file, correct_hash):
+        #XXX test that PGN termination marker is same as game result
         if "examplepgn" in os.listdir("."):
             example_path = "examplepgn/"
         else:
@@ -37,8 +39,8 @@ class TestInterpreter(unittest.TestCase):
         #print(tree.pretty())
         #self.interpreter.execute(tree, True)
         self.interpreter.execute(tree, False)
-        #print(self.board.fen())
-        #print(self.board)
+        print(self.board.fen())
+        print(self.board)
         #print(self.board.pgn())
         assert self.board.fen() == correct_hash
         tree2 = parse_notation(self.board.pgn())
@@ -47,6 +49,7 @@ class TestInterpreter(unittest.TestCase):
         interpreter2 = ChessInterpreter(board2)
         interpreter2.execute(tree2, False)
         assert board2.fen() == correct_hash
+        return self.board.fen(), self.board.pgn()
 
     def test_game_file(self):
         self.game_file_test("test_game1.pgn", "8/8/8/7p/5k1P/7K/7P/8 w - - 1 76")
@@ -98,10 +101,11 @@ class TestInterpreter(unittest.TestCase):
         self.game_file_test("test_promotion.pgn", "3r2k1/p2P1p2/2Q3b1/7p/4q3/2P1b3/PP6/K6R w - - 1 36")
 
     def test_game_checkmate(self):
-        pgn = "1. Nc3 f5 2. e4 fxe4 3. Nxe4 Nf6 4. Nxf6+ gxf6 5. Qh5#"
+        pgn = "1. Nc3 f5 2. e4 fxe4 3. Nxe4 Nf6 4. Nxf6+ gxf6 5. Qh5# 1-0"
         correct_hash = "rnbqkb1r/ppppp2p/5p2/7Q/8/8/PPPP1PPP/R1B1KBNR b KQkq - 1 5"
-        self.simple_game_test(pgn, correct_hash)
+        fen, generated_pgn = self.simple_game_test(pgn, correct_hash)
         assert self.board.game_state() == CHECKMATE
+        assert generated_pgn == pgn
 
     def test_game_unfinished(self):
         pgn = """1.d4 d5 2.c4 e6 3.Nf3 c5 4.cxd5 exd5 5.g3 Nc6 6.Bg2 Nf6 7.O-O Be7 

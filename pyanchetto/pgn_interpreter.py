@@ -16,6 +16,7 @@ class ChessInterpreter():
         self.board = board
         self.turn_number = 0
         self.verbose = False
+        self.termination_marker = None
         self.metadata_map = {}
 
     def execute(self, tree, verbose):
@@ -36,6 +37,9 @@ class ChessInterpreter():
                 self.move(child)
             elif child.data == "metadata":
                 self.metadata(child)
+            elif child.data == "white_win" or child.data == "black_win" or child.data == "draw":
+                self.termination_marker = child.data
+
 
     def metadata(self, tree):
         self.metadata_map[str(tree.children[0])] = str(tree.children[1])
