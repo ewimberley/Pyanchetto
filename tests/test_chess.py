@@ -28,14 +28,14 @@ class TestChess(unittest.TestCase):
         assert black_pawn_moves == black_pawn_true_moves
 
     def test_valid_promotion_moves(self):
-        self.board.board.fill(0)
+        self.board.board = self.empty_board()
         self.board.board[6][4] = 6
         white_pawn_true_moves = [(4, 7, False, 'Q'), (4, 7, False, 'R'), (4, 7, False, 'B'), (4, 7, False, 'N')] 
         white_pawn_moves = list(self.board.pawn(4, 6))
         assert white_pawn_moves == white_pawn_true_moves
 
     def test_valid_rook_moves(self):
-        self.board.board.fill(0)
+        self.board.board = self.empty_board()
         self.board.board[4][4] = 3
         true_moves = [(4, 5, True), (4, 6, True), (4, 7, True), (4, 3, True), (4, 2, True), (4, 1, True), (4, 0, True),
                       (5, 4, True), (6, 4, True), (7, 4, True), (3, 4, True), (2, 4, True), (1, 4, True), (0, 4, True)]
@@ -43,7 +43,7 @@ class TestChess(unittest.TestCase):
         assert moves == true_moves
 
     def test_valid_bishop_moves(self):
-        self.board.board.fill(0)
+        self.board.board = self.empty_board()
         self.board.board[4][4] = 4
         true_moves = [(5, 5, True), (6, 6, True), (7, 7, True), (3, 3, True), (2, 2, True), (1, 1, True),
                       (0, 0, True), (3, 5, True), (2, 6, True), (1, 7, True), (5, 3, True), (6, 2, True), (7, 1, True)]
@@ -53,7 +53,7 @@ class TestChess(unittest.TestCase):
     #TODO test knight moves
 
     def test_valid_queen_moves(self):
-        self.board.board.fill(0)
+        self.board.board = self.empty_board()
         self.board.board[4][4] = 2
         true_moves = [(5, 5, True), (6, 6, True), (7, 7, True), (3, 3, True), (2, 2, True), (1, 1, True), (0, 0, True),
                       (3, 5, True), (2, 6, True), (1, 7, True), (5, 3, True), (6, 2, True), (7, 1, True), (4, 5, True),
@@ -63,7 +63,7 @@ class TestChess(unittest.TestCase):
         assert moves == true_moves
 
     def test_valid_king_moves(self):
-        self.board.board.fill(0)
+        self.board.board = self.empty_board()
         self.board.board[4][4] = 1
         self.board.kings_moved[0] = True
         true_moves = [(5, 5, True), (3, 3, True), (5, 3, True), (3, 5, True), (4, 5, True), (4, 3, True),
@@ -72,7 +72,7 @@ class TestChess(unittest.TestCase):
         assert moves == true_moves
 
     def test_valid_king_moves_castle(self):
-        self.board.board.fill(0)
+        self.board.board = self.empty_board()
         self.board.board[0][4] = 1
         self.board.board[0][0] = 3
         self.board.board[0][7] = 3
@@ -101,7 +101,7 @@ class TestChess(unittest.TestCase):
         assert 20 == len(to_coords)
 
     def test_check_check(self):
-        self.board.board.fill(0)
+        self.board.board = self.empty_board()
         self.board.board[4][4] = 1
         self.board.init_player_pieces()
         assert not self.board.check_check(self.board.current_player)
@@ -109,3 +109,6 @@ class TestChess(unittest.TestCase):
         self.board.init_player_pieces()
         assert self.board.check_check(self.board.current_player)
         #TODO check that non-threatening moves do not place king in check
+        
+    def empty_board(self):
+        return [[0 for col in range(8)] for row in range(8)]

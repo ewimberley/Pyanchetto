@@ -2,7 +2,7 @@ import copy
 import logging
 import math
 
-import numpy as np
+import cython
 
 SIZE = 8
 piece_types = ("K", "Q", "R", "B", "N", "P")
@@ -48,7 +48,7 @@ class Chess:
 
     def __init__(self, other=None):
         if other is not None:
-            self.board = np.copy(other.board)
+            self.board = [[other.board[row][col] for col in range(SIZE)] for row in range(SIZE)]
             self.rooks_moved = copy.deepcopy(other.rooks_moved)
             self.kings_moved = copy.deepcopy(other.kings_moved)
             self.kings_castled = copy.deepcopy(other.kings_castled)
@@ -59,7 +59,7 @@ class Chess:
             self.promoted_pieces = copy.deepcopy(other.promoted_pieces)
             self.player_pieces_list = copy.deepcopy(other.player_pieces_list)
         else:
-            self.board = np.zeros((8, 8), dtype=np.int8)
+            self.board = [[0 for col in range(SIZE)] for row in range(SIZE)]
             self.rooks_moved, self.kings_moved, self.kings_castled = [-1, -1, -1, -1], [-1, -1], [-1, -1]
             self.current_player = 1
             self.move_list, self.pgn_str = [], []
@@ -70,38 +70,52 @@ class Chess:
             self.__set_row(7, [p.lower() for p in home_row])
             self.init_player_pieces()
 
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def __set_row(self, row: cython.int, row_pieces):
+        for col in range(SIZE):
+            self.set_coord((col, row), pieces_index[row_pieces[col]])
+        #map2(lambda col: self.coord((col, row), pieces_index[row_pieces[col]]), [col for col in range(SIZE)])
+
+
     def init_player_pieces(self):
         self.player_pieces_list = [{c for c in all_coords if self.is_color(c, color)} for color in (WHITE, BLACK)]
 
 
-    def coord(self, coord, piece=None):
-        """Returns the type of the piece at coord if piece is None, otherwise sets the location to the piece type."""
-        if piece is None:
-            return self.board[coord[1]][coord[0]]
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def set_coord(self, coord: tuple, piece: cython.int):
         self.board[coord[1]][coord[0]] = piece
 
 
-    def is_color(self, coord, color):
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def get_coord(self, coord: tuple):
+        return self.board[coord[1]][coord[0]]
+
+
+    def is_color(self, coord: tuple, color: cython.int):
         """Returns True if the color (player) of the piece at a location is the given color."""
         return self.color(coord) == color
 
 
-    def color(self, coord):
+    def color(self, coord: tuple):
         """Returns the color of the piece at a location (or the EMPTY color if no piece is at that location)."""
-        piece_type = self.board[coord[1]][coord[0]]
+        cdef int piece_type = self.board[coord[1]][coord[0]]
         if piece_type == EMPTY:
             return EMPTY
         return WHITE if piece_type < 7 else BLACK
 
 
-    def is_type(self, coord, piece_type):
+    def is_type(self, coord: tuple, piece_type: str):
         """Returns true if the piece at a location is the given type of piece."""
-        return pieces[self.coord(coord)].lower() == piece_type.lower()
+        return pieces[self.get_coord(coord)].lower() == piece_type.lower()
 
 
     def player_pieces_of_type(self, piece_type, player):
         for coord in self.player_pieces_list[player - 1]:
-            if self.coord(coord) in pieces_type_map[piece_type]:
+            if self.get_coord(coord) in pieces_type_map[piece_type]:
                 yield coord
 
 
@@ -137,7 +151,7 @@ class Chess:
 
     def valid_piece_moves(self, p, validate=True, threats=None):
         # TODO detect check and checkmate
-        p_type = self.coord(p)
+        p_type = self.get_coord(p)
         p_type = p_type - 6 if p_type > 6 else p_type
         funcs = [lambda: [], self.king, self.queen, self.rook, self.bishop, self.knight, self.pawn]
         moves = funcs[p_type](p[0], p[1], threats) if p_type == 1 else funcs[p_type](p[0], p[1])
@@ -181,7 +195,7 @@ class Chess:
         _______
         A matrix indicating the number of threats to each coordinate on the board.
         """
-        threatened = np.zeros((8, 8), dtype=np.int8)
+        threatened = [[0 for col in range(SIZE)] for row in range(SIZE)]
         for move in self._compute_threats(player):
             if move[2]:
                 threatened[move[1]][move[0]] += 1
@@ -231,11 +245,11 @@ class Chess:
                 if pgn_castle is not None:
                     pgn = pgn_castle
                 else:
-                    pgn_type = pieces[self.coord(from_coord)].upper()
-                    piece_type = self.coord(from_coord)
+                    pgn_type = pieces[self.get_coord(from_coord)].upper()
+                    piece_type = self.get_coord(from_coord)
                     #TODO piece disambiguation if same type of piece can move to to_coord
                     for piece in self.__type_in_coords(self.player_pieces_list[self.current_player-1], piece_type):
-                        if self.coord(piece) == piece_type and piece != from_coord:
+                        if self.get_coord(piece) == piece_type and piece != from_coord:
                             for move in self.valid_piece_moves(piece):
                                 if move == to_coord:
                                     if piece[0] == from_coord[0]:
@@ -308,12 +322,12 @@ class Chess:
         to_color = self.color(to_coord)
         if to_color != EMPTY:
             captured = (to_coord[0], to_coord[1])
-            self.captured_pieces[len(self.move_list)] = (self.coord(captured), captured)
+            self.captured_pieces[len(self.move_list)] = (self.get_coord(captured), captured)
             self.player_pieces_list[to_color - 1].remove(captured)
         self.player_pieces_list[from_color - 1].remove(from_coord)
         self.player_pieces_list[from_color - 1].add((to_coord[0], to_coord[1]))
-        self.coord(to_coord, self.coord(from_coord))
-        self.coord(from_coord, EMPTY)
+        self.set_coord(to_coord, self.get_coord(from_coord))
+        self.set_coord(from_coord, EMPTY)
 
 
     def __undo_last_move(self):
@@ -338,11 +352,11 @@ class Chess:
                     self.rooks_moved[rook_index] = -1
                     self.kings_castled[king_index] = -1
         elif last_move_index in self.promoted_pieces:
-            self.coord(last_move[1], 6 if self.current_player == WHITE else 12)
+            self.set_coord(last_move[1], 6 if self.current_player == WHITE else 12)
             self.promoted_pieces.pop(last_move_index)
         self.__move(last_move[1], last_move[0])
         if captured is not None:
-            self.coord(captured[1], captured[0])
+            self.set_coord(captured[1], captured[0])
             self.player_pieces_list[self.color(captured[1]) - 1].add(captured[1])
 
     def __handle_special(self, from_coord, to_coord):
@@ -350,19 +364,19 @@ class Chess:
         if to_coord[3] == 6 or to_coord[3] == 12: #en pessant
             captured = (to_coord[0], from_coord[1])
             captured_color = self.color(captured)
-            self.captured_pieces[len(self.move_list) - 1] = (self.coord(captured), captured)
-            self.coord(captured, EMPTY)
+            self.captured_pieces[len(self.move_list) - 1] = (self.get_coord(captured), captured)
+            self.set_coord(captured, EMPTY)
             self.player_pieces_list[captured_color - 1].remove(captured)
         else: #promotion
             promotion_type = to_coord[3]
             if promotion_type.upper() in promotion_candidates and self.is_type(to_coord, "P"):
                 if self.current_player == WHITE and to_coord[1] == 7:
-                    self.coord(to_coord, pieces_index[promotion_type.upper()])
+                    self.set_coord(to_coord, pieces_index[promotion_type.upper()])
                 elif self.current_player == BLACK and to_coord[1] == 0:
-                    self.coord(to_coord, pieces_index[promotion_type.lower()])
+                    self.set_coord(to_coord, pieces_index[promotion_type.lower()])
                 else:
                     raise BadPromotionException("Cannot promote from this position")
-                self.promoted_pieces[len(self.move_list)-1] = (self.coord(to_coord), to_coord)
+                self.promoted_pieces[len(self.move_list)-1] = (self.get_coord(to_coord), to_coord)
             else:
                 raise BadPromotionException("Invalid promotion")
 
@@ -393,9 +407,9 @@ class Chess:
             if self.is_type(last_move[1], "P") and self.is_color(last_move[1], inverse_color(color)):
                 if abs(last_move[1][1] - last_move[0][1]) == 2 and abs(last_move[0][0] - f) == 1 and last_move[1][1] == r:
                     if color == 2:
-                        yield (last_move[0][0], r - 1, False, self.coord((f, r)))
+                        yield (last_move[0][0], r - 1, False, self.get_coord((f, r)))
                     else:
-                        yield (last_move[0][0], r + 1, False, self.coord((f, r)))
+                        yield (last_move[0][0], r + 1, False, self.get_coord((f, r)))
 
 
     def rook(self, f, r):
@@ -450,7 +464,7 @@ class Chess:
         """
         for coord in coords:
             status = 0 if threats is None else threats[coord[1]][coord[0]]
-            if self.coord(coord) != 0 or status != 0:
+            if self.get_coord(coord) != 0 or status != 0:
                 return False
         return True
 
@@ -576,16 +590,12 @@ class Chess:
 
     def __type_in_coords(self, coords, type):
         for coord in coords:
-            if self.coord(coord) == type:
+            if self.get_coord(coord) == type:
                 yield coord
 
 
-    def __set_row(self, row, row_pieces):
-        map2(lambda col: self.coord((col, row), pieces_index[row_pieces[col]]), [col for col in range(SIZE)])
-
-
     def __str__(self):
-        piece_arr = [pieces_ascii[self.coord((coord[1], SIZE - coord[0] - 1))] for coord in all_coords]
+        piece_arr = [pieces_ascii[self.get_coord((coord[1], SIZE - coord[0] - 1))] for coord in all_coords]
         return "".join([" ".join(piece_arr[i*SIZE:i*SIZE+SIZE])+"\n" for i in range(SIZE)])
 
 
@@ -593,7 +603,7 @@ class Chess:
         """Return the FEN hash string for the current state of the game."""
         hash = []
         for i, coord in enumerate(all_coords):
-            p_type = self.coord((coord[1], SIZE - coord[0] - 1))
+            p_type = self.get_coord((coord[1], SIZE - coord[0] - 1))
             if i % 8 == 0 and i > 0:
                 hash.append("/")
             if p_type == EMPTY:
