@@ -41,10 +41,6 @@ class TestParser(unittest.TestCase):
         move = "31. Nc3 Nf6#???!!!!!"
         self.parse(move)
 
-    def test_checkmate(self):
-        move = "5. Qh5#"
-        self.parse(move)
-
     def test_comment(self):
         move = "1. Nc3 {test1} f5 { test2 } 1/2-1/2"
         self.parse(move)

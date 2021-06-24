@@ -15,14 +15,7 @@ GLYPH = '$'
 KINGSIDE_CASTLE = "O-O"
 QUEENSIDE_CASTLE = "O-O-O"
 
-def parse_file(file_name):
-    with open(file_name, "r") as file:
-        data = file.read()
-        return parse_notation(data)
-
-
-def parse_notation(string):
-    lexemes = {
+normal_mode_lexemes = {
         #metadata
         '[', ']', '"',
         #comments
@@ -33,30 +26,37 @@ def parse_notation(string):
         '?', '!', GLYPH,
         #misc
         '-', '/', ' '
-    }
-    lexemes.update(FILES)
-    lexemes.update(PIECES)
-    lexer = Lexer(lexemes, string)
-    lexer.lex()
-    tokens = lexer.tokens
-    print(tokens)
-    parser = PGNParser(tokens)
+}
+normal_mode_lexemes.update(FILES)
+normal_mode_lexemes.update(PIECES)
+
+
+def parse_file(file_name):
+    with open(file_name, "r") as file:
+        data = file.read()
+        return parse_notation(data)
+
+
+def parse_notation(string):
+    parser = PGNParser(string)
     parser.parse()
     parser.pretty_print()
-    tree = parser.tree
-    print(tree)
-    return tree, tokens
+    print(parser.tree)
+    print(parser.tokens)
+    return parser.tree, parser.tokens
 
 
 class PGNParser(Parser):
 
     def parse(self):
+        self.lexer.set_lexemes(normal_mode_lexemes)
         super().parse()
         self.pgn()
 
     @ast("pgn")
     def pgn(self):
         self.consume_whitespace()
+        #XXX put a max limit on how long this loop can go
         while self.has_next():
             t = self.peak()
             if self.accept('['):
@@ -67,13 +67,29 @@ class PGNParser(Parser):
                 self.outcome()
             self.consume_whitespace()
 
+    @ast("metadata")
     def metadata(self):
-        pass
+        self.lexer.set_lexemes({'[', ']', ' '})
+
+        self.lexer.set_lexemes(normal_mode_lexemes)
+
+    @ast("comment")
+    def comment(self):
+        self.lexer.set_lexemes({'{', '}', ' '})
+        t = self.consume()
+        comment_str = ""
+        t = self.consume()
+        while str(t) != '}':
+            comment_str += str(t)
+            t = self.consume()
+        self.lexer.set_lexemes(normal_mode_lexemes)
 
     @ast("turn")
     def turn(self):
         self.move_number()
         self.move()
+        if self.match_pattern(['{']):
+            self.comment()
         if self.match_pattern([RegularExpression("^[0-9]+$"), DOT]):
             self.move_number()
         move_lookahead = PIECES.union(FILES)
@@ -89,7 +105,7 @@ class PGNParser(Parser):
             t = self.consume()
             num_str += str(t)
         if num_str == "":
-            raise SyntaxError("move number", self.tokens[self.on_token], self.on_token, self.tokens)
+            raise SyntaxError("move number", None, self.lexer)
         self.create_append(t)
         t = self.peak()
         while self.accept(DOT):
