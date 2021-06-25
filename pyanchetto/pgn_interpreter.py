@@ -18,10 +18,12 @@ class ChessInterpreter():
         self.board = board
         self.turn_number = 0
         self.verbose = False
+        self.fens = []
         self.termination_marker = None
         self.metadata_map = {}
 
     def execute(self, tree, verbose):
+        self.fens.append(self.board.fen())
         #TODO set logging level based on verbose
         self.verbose = verbose
         if verbose:
@@ -57,6 +59,7 @@ class ChessInterpreter():
                 if on_move == 2:
                     raise PGNInterpreterError("More than two pieces moved in one turn.")
                 self.player_turn(child)
+                self.fens.append(self.board.fen())
                 on_move += 1
 
     def player_turn(self, tree):

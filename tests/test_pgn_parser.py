@@ -51,7 +51,7 @@ class TestParser(unittest.TestCase):
         tree, tokens = self.parse(move)
         tokens_str = "['[', 'key', ' ', 'value', ' ', 'text', ']', ' ', '1', '.', ' ', 'N', 'c', '3', ' ', 'f', '5', ' ', '1', '/', '2', '-', '1', '/', '2']"
         assert str(tokens) == tokens_str
-        tree_str = "root: [pgn: [metadata: [key, value text],turn: [move_number: [1],move: [piece_type: [N],coord: [file: [c],rank: [3]]],move: [coord: [file: [f],rank: [5]]]],outcome: [draw]]]"
+        tree_str = "root: [pgn: [metadata: [key,value text],turn: [move_number: [1],move: [piece_type: [N],coord: [file: [c],rank: [3]]],move: [coord: [file: [f],rank: [5]]]],outcome: [draw]]]"
         assert str(tree) == tree_str
 
     def test_comment(self):
