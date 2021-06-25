@@ -2,7 +2,7 @@ import copy
 import logging
 import math
 
-import cython
+#import cython
 
 SIZE = 8
 piece_types = ("K", "Q", "R", "B", "N", "P")
@@ -71,9 +71,7 @@ class Chess:
             self.init_player_pieces()
 
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    def __set_row(self, row: cython.int, row_pieces):
+    def __set_row(self, row, row_pieces):
         for col in range(SIZE):
             self.set_coord((col, row), pieces_index[row_pieces[col]])
         #map2(lambda col: self.coord((col, row), pieces_index[row_pieces[col]]), [col for col in range(SIZE)])
@@ -83,19 +81,15 @@ class Chess:
         self.player_pieces_list = [{c for c in all_coords if self.is_color(c, color)} for color in (WHITE, BLACK)]
 
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    def set_coord(self, coord: tuple, piece: cython.int):
+    def set_coord(self, coord: tuple, piece):
         self.board[coord[1]][coord[0]] = piece
 
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     def get_coord(self, coord: tuple):
         return self.board[coord[1]][coord[0]]
 
 
-    def is_color(self, coord: tuple, color: cython.int):
+    def is_color(self, coord: tuple, color):
         """Returns True if the color (player) of the piece at a location is the given color."""
         return self.color(coord) == color
 
