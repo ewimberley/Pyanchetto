@@ -1,6 +1,8 @@
 from functools import wraps
 import re
 
+from pyanchetto.streaming_lexer import *
+
 class Tree:
     def __init__(self, data):
         self.data = data
@@ -15,19 +17,8 @@ class Tree:
     def __repr__(self):
         return f"'{self}'"
 
-class Token:
-    def __init__(self, data):
-        self.data = data
-
-    def __str__(self):
-        return f"{self.data}"
-
-    def __repr__(self):
-        return f"'{self}'"
-
-
 class SyntaxError(Exception):
-    def __init__(self, description, token, lexer):
+    def __init__(self, description, token=None, lexer=None):
         end = min(lexer.cursor+20, len(lexer.string))
         str_at_token = "".join([c for c in lexer.string[lexer.cursor:end]])
         if token is not None:
@@ -42,15 +33,42 @@ class RegularExpression:
         self.pattern = re
 
 
-def ast(data):
+def ast(data, require=None, description=None, optional=None):
     def _ast(func):
+        def ast_stack_function(self, tokens=None, *args, **kwargs):
+            self.create_push(data)
+            if tokens is None:
+                result = func(self, *args, **kwargs)
+            else:
+                result = func(self, tokens, *args, **kwargs)
+            self.ast_path.pop()
+            return result
+
         @wraps(func)
         def inner(self, *args, **kwargs):
-            self.create_push(data)
-            func(self, *args, **kwargs)
-            self.ast_path.pop()
+            if require is not None:
+                tokens = self.expect_pattern(require, description)
+                return ast_stack_function(self, tokens, *args, **kwargs)
+            elif optional is not None:
+                if self.match_pattern(optional):
+                    tokens = [self.accept(f) for f in optional]
+                    return ast_stack_function(self, tokens, *args, **kwargs)
+            else:
+                return ast_stack_function(self, None, *args, **kwargs)
         return inner
     return _ast
+
+def lexemes(lexemes):
+    def _lexemes(func):
+        @wraps(func)
+        def inner(self, *args, **kwargs):
+            lexemes_buffer = self.lexer.lexemes
+            self.lexer.set_lexemes(lexemes)
+            result = func(self, *args, **kwargs)
+            self.lexer.set_lexemes(lexemes_buffer)
+            return result
+        return inner
+    return _lexemes
 
 class Parser:
     def __init__(self, string):
@@ -77,10 +95,8 @@ class Parser:
         return True
 
     def create_push(self, data):
-        node = Tree(data)
-        self.ast_path[-1].children.append(node)
-        self.ast_path.append(node)
-        return node
+        self.ast_path.append(self.create_append(data))
+        return self.ast_path[-1]
 
     def create_append(self, data):
         node = Tree(data)
@@ -88,66 +104,59 @@ class Parser:
         return node
 
     def has_next(self):
-        lookahead = self.lexer.lookahead()
-        return len(lookahead) == 1
-        #return self.on_token < len(self.tokens)
+        return len(self.lexer.lookahead()) == 1
 
     def consume(self, num_tokens=1):
         if num_tokens > 1:
-            tokens = []
-            for i in range(num_tokens):
-                tokens.append(self.consume())
-            return tokens
-        if self.has_next():
+            return [self.consume() for i in range(num_tokens)]
+        elif self.has_next():
             t = self.lexer.parse_next_token()
             self.tokens.append(t)
-            #t = self.tokens[self.on_token]
             return t
-        else:
-            raise SyntaxError("Unexpected end of token stream.")
+        raise SyntaxError("Unexpected end of token stream.")
 
     def peak(self):
         if self.has_next():
-            lookahead = self.lexer.lookahead()
-            return lookahead[0]
-            #return self.tokens[self.on_token]
-        else:
-           raise SyntaxError("Unexpected end of token stream.")
+            return self.lexer.lookahead()[0]
+        raise SyntaxError("Unexpected end of token stream.")
+
+    def parse_alternatives(self, alternatives, description):
+        for alternative in alternatives:
+            if self.match_pattern(alternative[0]):
+                return alternative[1]()
+        raise SyntaxError(description, None, self.lexer)
 
     def match_pattern(self, pattern):
         lookahead = self.lexer.lookahead(len(pattern))
+        if len(lookahead) != len(pattern):
+            return False
         for i in range(len(pattern)):
-            #if (self.on_token + i) >= len(self.tokens):
-            if i >= len(lookahead):
-                return False
             p = pattern[i]
             t = lookahead[i]
-            #t  = self.tokens[self.on_token + i]
-            if isinstance(p, str):
-                if str(t) != p:
-                    return False
-            elif isinstance(p, list) or isinstance(p, dict) or isinstance(p, set):
-                if str(t) not in p:
-                    return False
-            elif isinstance(p, RegularExpression):
-                #forward_string = "".join([str(t) for t in self.tokens[self.on_token:]])
-                #if not re.match(p.pattern, forward_string):
-                if not re.match(p.pattern, str(t)):
-                    return False
+            if isinstance(p, str) and str(t) != p:
+                return False
+            elif (isinstance(p, list) or isinstance(p, dict) or isinstance(p, set)) and str(t) not in p:
+                return False
+            elif isinstance(p, RegularExpression) and (not re.match(p.pattern, str(t))):
+                return False
         return True
 
     def accept(self, sym):
         t = self.peak()
         if isinstance(sym, list) or isinstance(sym, dict) or isinstance(sym, set):
             if str(t) in sym:
-                self.consume()
-                return t
+                return self.consume()
             return False
-        else:
-            if str(t) == sym:
-                self.consume()
-                return t
+        elif str(t) == sym:
+            return self.consume()
         return False
+
+    def expect_pattern(self, syms, description):
+        match = self.match_pattern(syms)
+        if match:
+            return [self.accept(sym) for sym in syms]
+        else:
+            raise SyntaxError(description, None, self.lexer)
 
     def expect(self, sym, description):
         t = self.peak()
@@ -160,53 +169,5 @@ class Parser:
 
     def consume_whitespace(self):
         if self.has_next():
-            while self.accept(' '):
+            while self.accept(' ') or self.accept('\n'):
                 pass
-
-
-class Lexer:
-    def __init__(self, lexemes, string):
-        self.cursor = 0
-        self.lexemes = lexemes
-        self.string = string
-
-    def set_lexemes(self, lexemes):
-        self.lexemes = lexemes
-
-    def lookahead(self, lookahead=1):
-        cursor_buffer = self.cursor
-        tokens = []
-        for i in range(lookahead):
-            t = self.parse_next_token()
-            if t is not None:
-                tokens.append(t)
-        self.cursor = cursor_buffer
-        return tokens
-
-    def parse_next_token(self):
-        while self.cursor < len(self.string):
-            t = self.string[self.cursor]
-            if t in self.lexemes:
-                current = Token(t)
-                self.cursor += 1
-                return current
-            elif t in [" ", "\n", "\r", "\t"]: #ignore non-lexeme whitespace
-                self.cursor += 1
-            else:
-                atom_str = self.atom(self.cursor)
-                atom = Token(atom_str)
-                self.cursor += len(atom_str)
-                return atom
-
-    def atom(self, i):
-        #XXX this can cause an infinite loop if it returns an empty string
-        j = i
-        while j < len(self.string):
-            current = self.string[j]
-            #if current.isalnum():
-            if not current.isspace() and current not in self.lexemes:
-                j += 1
-            else:
-                return self.string[i:j]
-            if j == len(self.string):
-                return self.string[i:j]
