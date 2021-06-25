@@ -2,7 +2,7 @@ import logging
 import argparse
 from pyanchetto.chess import Chess
 from pyanchetto.pgn_interpreter import ChessInterpreter
-from pyanchetto.chess_parser import parse_notation
+from pyanchetto.pgn_parser import parse_notation
 
 ENCODE_IN = 'utf-8'
 

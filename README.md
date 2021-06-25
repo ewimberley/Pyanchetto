@@ -28,7 +28,7 @@ Executing a PGN string can be done in only a few lines of code.
 ```
 from pyanchetto.chess import Chess
 from pyanchetto.pgn_interpreter import ChessInterpreter
-from pyanchetto.chess_parser import parse_notation
+from pyanchetto.pgn_parser import parse_notation
 board = Chess()
 interpreter = ChessInterpreter(board)
 game = "1. Nc3 f5 2. e4 fxe4 3. Nxe4 Nf6 4. Nxf6+ gxf6 5. Qh5#"
