@@ -32,7 +32,6 @@ class ChessInterpreter():
             logging.getLogger().setLevel(logging.WARN)
         self.pgn(tree.children[0])
 
-
     def pgn(self, tree):
         for child in tree.children:
             if child.data == "turn":
@@ -42,12 +41,12 @@ class ChessInterpreter():
             elif child.data == "white_win" or child.data == "black_win" or child.data == "draw":
                 self.termination_marker = child.data
 
-
     def metadata(self, tree):
-        value = str(tree.children[1])
+        key = str(tree.children[0].data)
+        value = str(tree.children[1].data)
         if value.startswith("\""):
             value = value[1:-1]
-            self.metadata_map[str(tree.children[0])] = value
+            self.metadata_map[key] = value
 
     def move(self, tree):
         self.turn_number = int(str(tree.children[0].children[0]))

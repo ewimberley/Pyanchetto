@@ -38,10 +38,6 @@ class TestParser(unittest.TestCase):
         tree_str = "root: [pgn: [turn: [move_number: [1],move: [queen_side_castle]],outcome: [draw]]]"
         assert str(tree) == tree_str
 
-    #def test_capture(self):
-    #    move = "1. e4 fxe4"
-    #    self.parse(move)
-
     def test_move_modifiers(self):
         move = "1. Nc3 Nf6#???!!!!! 1/2-1/2"
         tree, tokens = self.parse(move)
