@@ -92,7 +92,12 @@ class Parser:
         return len(lookahead) == 1
         #return self.on_token < len(self.tokens)
 
-    def consume(self):
+    def consume(self, num_tokens=1):
+        if num_tokens > 1:
+            tokens = []
+            for i in range(num_tokens):
+                tokens.append(self.consume())
+            return tokens
         if self.has_next():
             t = self.lexer.parse_next_token()
             self.tokens.append(t)
@@ -185,6 +190,8 @@ class Lexer:
                 current = Token(t)
                 self.cursor += 1
                 return current
+            elif t in [" ", "\n", "\r", "\t"]: #ignore non-lexeme whitespace
+                self.cursor += 1
             else:
                 atom_str = self.atom(self.cursor)
                 atom = Token(atom_str)

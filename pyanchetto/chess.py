@@ -102,7 +102,7 @@ class Chess:
 
     def color(self, coord: tuple):
         """Returns the color of the piece at a location (or the EMPTY color if no piece is at that location)."""
-        cdef int piece_type = self.board[coord[1]][coord[0]]
+        piece_type = self.board[coord[1]][coord[0]]
         if piece_type == EMPTY:
             return EMPTY
         return WHITE if piece_type < 7 else BLACK

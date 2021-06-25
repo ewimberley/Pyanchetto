@@ -10,47 +10,68 @@ class TestParser(unittest.TestCase):
         pass
 
     def parse(self, move):
-        tree, tokens = parse_notation(move)
+        parser = parse_notation(move)
+        tree = parser.tree
+        tokens = parser.tokens
+        #parser.pretty_print()
+        print(tree)
+        print(tokens)
         return tree, tokens
 
-    def test_simple(self):
-        move = "1. Nc3 Nf6"
-        self.parse(move)
+    #def test_simple(self):
+    #    move = "1. Nc3 Nf6"
+    #    self.parse(move)
 
     def test_king_side_castle(self):
-        move = "1. 0-0"
-        tree = self.parse(move)
-        #XXX fix this test
-        #nodes = tree.find_data("king_side_castle")
-        #for node in nodes:
-        #    print(node)
+        move = "1. O-O 1/2-1/2"
+        tree, tokens = self.parse(move)
+        tokens_str = "['1', '.', ' ', 'O', '-', 'O', ' ', '1', '/', '2', '-', '1', '/', '2']"
+        assert str(tokens) == tokens_str
+        tree_str = "root: [pgn: [turn: [move_number: [1],move: [king_side_castle]],outcome: [draw]]]"
+        assert str(tree) == tree_str
 
     def test_queen_side_castle(self):
-        move = "1. 0-0-0"
-        self.parse(move)
+        move = "1. O-O-O 1/2-1/2"
+        tree, tokens = self.parse(move)
+        tokens_str = "['1', '.', ' ', 'O', '-', 'O', '-', 'O', ' ', '1', '/', '2', '-', '1', '/', '2']"
+        assert str(tokens) == tokens_str
+        tree_str = "root: [pgn: [turn: [move_number: [1],move: [queen_side_castle]],outcome: [draw]]]"
+        assert str(tree) == tree_str
 
-    def test_second_move_coord_only(self):
-        move = "1. Nc3 f5"
-        self.parse(move)
-
-    def test_capture(self):
-        move = "2. e4 fxe4"
-        self.parse(move)
+    #def test_capture(self):
+    #    move = "1. e4 fxe4"
+    #    self.parse(move)
 
     def test_move_modifiers(self):
-        move = "31. Nc3 Nf6#???!!!!!"
-        self.parse(move)
+        move = "1. Nc3 Nf6#???!!!!! 1/2-1/2"
+        tree, tokens = self.parse(move)
+        tokens_str = "['1', '.', ' ', 'N', 'c', '3', ' ', 'N', 'f', '6', '#', '?', '?', '?', '!', '!', '!', '!', '!', ' ', '1', '/', '2', '-', '1', '/', '2']"
+        assert str(tokens) == tokens_str
+        tree_str = "root: [pgn: [turn: [move_number: [1],move: [piece_type: [N],coord: [file: [c],rank: [3]]],move: [piece_type: [N],coord: [file: [f],rank: [6]],move_modifiers: [#,?,?,?,!,!,!,!,!]]],outcome: [draw]]]"
+        assert str(tree) == tree_str
+
+    def test_metadata(self):
+        move = "[key value text] 1. Nc3 f5 1/2-1/2"
+        tree, tokens = self.parse(move)
+        tokens_str = "['[', 'key', ' ', 'value', ' ', 'text', ']', ' ', '1', '.', ' ', 'N', 'c', '3', ' ', 'f', '5', ' ', '1', '/', '2', '-', '1', '/', '2']"
+        assert str(tokens) == tokens_str
+        tree_str = "root: [pgn: [metadata: [key, value text],turn: [move_number: [1],move: [piece_type: [N],coord: [file: [c],rank: [3]]],move: [coord: [file: [f],rank: [5]]]],outcome: [draw]]]"
+        assert str(tree) == tree_str
 
     def test_comment(self):
         move = "1. Nc3 {test1} f5 { test2 } 1/2-1/2"
-        self.parse(move)
+        tree, tokens = self.parse(move)
+        tokens_str = "['1', '.', ' ', 'N', 'c', '3', ' ', '{', 'test1', '}', ' ', 'f', '5', ' ', '{', ' ', 'test2', ' ', '}', ' ', '1', '/', '2', '-', '1', '/', '2']"
+        assert str(tokens) == tokens_str
+        tree_str = "root: [pgn: [turn: [move_number: [1],move: [piece_type: [N],coord: [file: [c],rank: [3]]],comment: [test1],move: [coord: [file: [f],rank: [5]]],comment: [ test2 ]],outcome: [draw]]]"
+        assert str(tree) == tree_str
 
     def test_non_standard_move_numbers(self):
         move = "1... Nc3 1. f5 1/2-1/2"
         tree, tokens = self.parse(move)
         tokens_str = "['1', '.', '.', '.', ' ', 'N', 'c', '3', ' ', '1', '.', ' ', 'f', '5', ' ', '1', '/', '2', '-', '1', '/', '2']"
         assert str(tokens) == tokens_str
-        tree_str = "root: [pgn: [turn: [move_number: [1],move: [piece_type: [N],cord: [file: [c],rank: [3]]],move_number: [1],move: [cord: [file: [f],rank: [5]]]],outcome: [draw]]]"
+        tree_str = "root: [pgn: [turn: [move_number: [1],move: [piece_type: [N],coord: [file: [c],rank: [3]]],move_number: [1],move: [coord: [file: [f],rank: [5]]]],outcome: [draw]]]"
         assert str(tree) == tree_str
 
     def test_complete_game(self):
@@ -58,7 +79,7 @@ class TestParser(unittest.TestCase):
         tree, tokens = self.parse(move)
         tokens_str = "['1', '.', ' ', 'N', 'c', '3', ' ', 'f', '5', ' ', '2', '.', ' ', 'e', '4', ' ', 'f', 'x', 'e', '4', ' ', '3', '.', ' ', 'N', 'x', 'e', '4', ' ', 'N', 'f', '6', ' ', '4', '.', ' ', 'N', 'x', 'f', '6', '+', ' ', 'g', 'x', 'f', '6', ' ', '5', '.', ' ', 'Q', 'h', '5', '#', ' ', '1', '-', '0']"
         assert str(tokens) == tokens_str
-        tree_str = "root: [pgn: [turn: [move_number: [1],move: [piece_type: [N],cord: [file: [c],rank: [3]]],move: [cord: [file: [f],rank: [5]]]],turn: [move_number: [2],move: [cord: [file: [e],rank: [4]]],move: [file: [f],capture,cord: [file: [e],rank: [4]]]],turn: [move_number: [3],move: [piece_type: [N],capture,cord: [file: [e],rank: [4]]],move: [piece_type: [N],cord: [file: [f],rank: [6]]]],turn: [move_number: [4],move: [piece_type: [N],capture,cord: [file: [f],rank: [6]],move_modifiers: [+]],move: [file: [g],capture,cord: [file: [f],rank: [6]]]],turn: [move_number: [5],move: [piece_type: [Q],cord: [file: [h],rank: [5]],move_modifiers: [#]]],outcome: [white_win]]]"
+        tree_str = "root: [pgn: [turn: [move_number: [1],move: [piece_type: [N],coord: [file: [c],rank: [3]]],move: [coord: [file: [f],rank: [5]]]],turn: [move_number: [2],move: [coord: [file: [e],rank: [4]]],move: [file: [f],capture,coord: [file: [e],rank: [4]]]],turn: [move_number: [3],move: [piece_type: [N],capture,coord: [file: [e],rank: [4]]],move: [piece_type: [N],coord: [file: [f],rank: [6]]]],turn: [move_number: [4],move: [piece_type: [N],capture,coord: [file: [f],rank: [6]],move_modifiers: [+]],move: [file: [g],capture,coord: [file: [f],rank: [6]]]],turn: [move_number: [5],move: [piece_type: [Q],coord: [file: [h],rank: [5]],move_modifiers: [#]]],outcome: [white_win]]]"
         assert str(tree) == tree_str
         
 

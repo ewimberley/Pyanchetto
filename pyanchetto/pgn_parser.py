@@ -40,10 +40,7 @@ def parse_file(file_name):
 def parse_notation(string):
     parser = PGNParser(string)
     parser.parse()
-    parser.pretty_print()
-    print(parser.tree)
-    print(parser.tokens)
-    return parser.tree, parser.tokens
+    return parser
 
 
 class PGNParser(Parser):
@@ -59,7 +56,7 @@ class PGNParser(Parser):
         #XXX put a max limit on how long this loop can go
         while self.has_next():
             t = self.peak()
-            if self.accept('['):
+            if self.match_pattern(['[']):
                 self.metadata()
             elif self.match_pattern([RegularExpression("^[0-9]+$"), DOT]):
                 self.turn()
@@ -70,7 +67,15 @@ class PGNParser(Parser):
     @ast("metadata")
     def metadata(self):
         self.lexer.set_lexemes({'[', ']', ' '})
-
+        t = self.consume()
+        key = self.consume()
+        value_str = ""
+        t = self.consume()
+        while str(t) != ']':
+            value_str += str(t)
+            t = self.consume()
+        self.create_append(str(key))
+        self.create_append(value_str)
         self.lexer.set_lexemes(normal_mode_lexemes)
 
     @ast("comment")
@@ -82,35 +87,59 @@ class PGNParser(Parser):
         while str(t) != '}':
             comment_str += str(t)
             t = self.consume()
+        self.create_append(comment_str)
         self.lexer.set_lexemes(normal_mode_lexemes)
+
+    @ast("anno_glyph")
+    def anno_glyph(self):
+        t = self.expect(['$'], "annotation glyph ($)")
+        self.consume()
+        num_str = self.parser_number()
+        self.create_append(num_str)
 
     @ast("turn")
     def turn(self):
         self.move_number()
         self.move()
+        self.consume_whitespace()
+        if self.match_pattern(['$']):
+            self.anno_glyph()
+        self.consume_whitespace()
         if self.match_pattern(['{']):
             self.comment()
+        self.consume_whitespace()
         if self.match_pattern([RegularExpression("^[0-9]+$"), DOT]):
             self.move_number()
         move_lookahead = PIECES.union(FILES)
-        move_lookahead.update({KINGSIDE_CASTLE, QUEENSIDE_CASTLE})
+        move_lookahead.add('O') #castle
         if self.match_pattern([move_lookahead]):
             self.move()
+        self.consume_whitespace()
+        if self.match_pattern(['$']):
+            self.anno_glyph()
+        self.consume_whitespace()
+        if self.match_pattern(['{']):
+            self.comment()
+        self.consume_whitespace()
 
     @ast("move_number")
     def move_number(self):
         #FIXME expect number here
-        num_str = ""
-        while self.match_pattern([RegularExpression("^[0-9]+$")]):
-            t = self.consume()
-            num_str += str(t)
+        num_str = self.parser_number()
         if num_str == "":
             raise SyntaxError("move number", None, self.lexer)
-        self.create_append(t)
+        self.create_append(num_str)
         t = self.peak()
         while self.accept(DOT):
             pass
         self.consume_whitespace()
+
+    def parser_number(self):
+        num_str = ""
+        while self.match_pattern([RegularExpression("^[0-9]+$")]):
+            t = self.consume()
+            num_str += str(t)
+        return num_str
 
     @ast("move")
     def move(self):
@@ -121,6 +150,14 @@ class PGNParser(Parser):
                 self.ambiguous_rank_move()
             else:
                 self.coord()
+            if self.match_pattern([PROMOTION]):
+                self.promotion()
+        elif self.match_pattern(['O', '-', 'O', '-', 'O']):
+            self.queen_side_castle()
+        elif self.match_pattern(['O', '-', 'O']):
+            self.king_side_castle()
+        if self.match_pattern([[CHECK, CHECKMATE, "!", "?"]]): #FIXME add winning strings?
+            self.move_modifiers()
         self.consume_whitespace()
 
     def simple_move(self): #piece_type disambiguation? capture? coord move_modifiers?
@@ -137,8 +174,6 @@ class PGNParser(Parser):
             if self.match_pattern([CAPTURE]):
                 self.capture()
             self.coord()
-        if self.match_pattern([[CHECK, CHECKMATE, "!", "?"]]): #FIXME add winning strings?
-            self.move_modifiers()
 
     def ambiguous_rank_move(self): #file capture? coord promotion? move_modifiers?
         self.file()
@@ -159,7 +194,7 @@ class PGNParser(Parser):
         else:
             self.rank()
 
-    @ast("cord")
+    @ast("coord")
     def coord(self):
         self.file()
         self.rank()
@@ -178,13 +213,11 @@ class PGNParser(Parser):
 
     @ast("king_side_castle")
     def king_side_castle(self):
-        t = self.expect(KINGSIDE_CASTLE, "king side castle")
-        self.consume()
+        self.consume(3)
 
     @ast("queen_side_castle")
     def queen_side_castle(self):
-        t = self.expect(QUEENSIDE_CASTLE, "king side castle")
-        self.consume()
+        self.consume(5)
 
     @ast("promotion")
     def promotion(self):
@@ -208,8 +241,10 @@ class PGNParser(Parser):
             t = self.consume()
             self.create_append(str(t))
         #quality
-        while self.accept('!') or self.accept('?'):
-            pass
+        t = self.accept(['!', '?'])
+        while t:
+            self.create_append(str(t))
+            t = self.accept(['!', '?'])
         #FIXME winning strgs like +-, +/-, etc
 
     @ast("outcome")
@@ -223,15 +258,12 @@ class PGNParser(Parser):
 
     @ast("white_win")
     def white_win(self):
-        for i in range(3):
-            self.consume()
+        self.consume(3)
 
     @ast("black_win")
     def black_win(self):
-        for i in range(3):
-            self.consume()
+        self.consume(3)
 
     @ast("draw")
     def draw(self):
-        for i in range(7):
-            self.consume()
+        self.consume(7)

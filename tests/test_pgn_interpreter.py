@@ -2,7 +2,8 @@ import unittest
 import os
 
 from pyanchetto.chess import Chess, STALEMATE, CHECKMATE, NORMAL
-from pyanchetto.chess_parser import parse_notation, parse_file
+#from pyanchetto.chess_parser import parse_notation, parse_file
+from pyanchetto.pgn_parser import parse_notation, parse_file
 from pyanchetto.pgn_interpreter import ChessInterpreter
 
 
@@ -15,14 +16,16 @@ class TestInterpreter(unittest.TestCase):
         pass
 
     def simple_game_test(self, pgn, correct_hash):
-        tree = parse_notation(pgn)
+        parser = parse_notation(pgn)
+        tree = parser.tree
         #print(tree.pretty())
         self.interpreter.execute(tree, False)
         #print(self.board.fen())
         #print(self.board)
         assert self.board.fen() == correct_hash
         #print(self.board.pgn())
-        tree2 = parse_notation(self.board.pgn())
+        parser2 = parse_notation(self.board.pgn())
+        tree2 = parser2.tree
         board2 = Chess()
         interpreter2 = ChessInterpreter(board2)
         interpreter2.execute(tree2, False)
@@ -35,7 +38,8 @@ class TestInterpreter(unittest.TestCase):
             example_path = "examplepgn/"
         else:
             example_path = "../examplepgn/"
-        tree = parse_file(example_path + file)
+        parser = parse_file(example_path + file)
+        tree = parser.tree
         #print(tree.pretty())
         #self.interpreter.execute(tree, True)
         self.interpreter.execute(tree, False)
@@ -43,7 +47,8 @@ class TestInterpreter(unittest.TestCase):
         print(self.board)
         #print(self.board.pgn())
         assert self.board.fen() == correct_hash
-        tree2 = parse_notation(self.board.pgn())
+        parser2 = parse_notation(self.board.pgn())
+        tree2 = parser2.tree
         #print(self.board.pgn())
         board2 = Chess()
         interpreter2 = ChessInterpreter(board2)
@@ -79,7 +84,12 @@ class TestInterpreter(unittest.TestCase):
         self.game_file_test("test_game9.pgn", "8/8/3k2p1/P6p/3pp3/P3b3/2K3PP/4R3 b - - 1 37")
 
     def test_game_file_nag(self):
-        self.game_file_test("test_game_numeric_annotation_glyph.pgn", "rnbq3r/pppp2pp/2N1kP2/2n3B1/1b6/3P4/PP2QPPP/RN1K1B1R b - - 4 11")
+        pgn = "1. Nc3 f5 2. e4 $6 fxe4 $6 3. Nxe4 Nf6 4. Nxf6+ gxf6 5. Qh5# 1-0"
+        pgn_check = "1. Nc3 f5 2. e4 fxe4 3. Nxe4 Nf6 4. Nxf6+ gxf6 5. Qh5# 1-0"
+        correct_hash = "rnbqkb1r/ppppp2p/5p2/7Q/8/8/PPPP1PPP/R1B1KBNR b KQkq - 1 5"
+        fen, generated_pgn = self.simple_game_test(pgn, correct_hash)
+        assert self.board.game_state() == CHECKMATE
+        assert generated_pgn == pgn_check
 
     def test_game_promotion_and_check(self):
         self.game_file_test("test_promotion_and_check.pgn", "8/6p1/p3k2p/1P6/5KP1/2N5/8/8 b - - 0 51")

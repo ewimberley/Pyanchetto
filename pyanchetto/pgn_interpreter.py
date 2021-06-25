@@ -4,10 +4,12 @@ from pyanchetto.chess import rank_file_to_coord, file_to_index, coord_to_notatio
 WHITE = 1
 BLACK = 2
 
-class PGNSyntaxError(Exception):
+class PGNInterpreterError(Exception):
     pass
 
 def child_index_is_type(tree, index, type):
+    if len(tree.children) <= index:
+        return False
     return tree.children[index].data == type
 
 class ChessInterpreter():
@@ -48,13 +50,13 @@ class ChessInterpreter():
             self.metadata_map[str(tree.children[0])] = value
 
     def move(self, tree):
-        self.turn_number = int(tree.children[0].children[0])
+        self.turn_number = int(str(tree.children[0].children[0]))
         logging.info("Turn: " + str(self.turn_number))
         on_move = 0
         for child in tree.children:
             if child.data == "move":
                 if on_move == 2:
-                    raise PGNSyntaxError("More than two pieces moved in one turn.")
+                    raise PGNInterpreterError("More than two pieces moved in one turn.")
                 self.player_turn(child)
                 on_move += 1
 
@@ -66,7 +68,7 @@ class ChessInterpreter():
         if tree.children[0].data in ("king_side_castle", "queen_side_castle"):
             piece, self.to_coord = self.castle(tree.children[0])
         elif child_index_is_type(tree, 1, "disambiguation"):
-            self.set_piece(tree.children[0].data)
+            self.set_piece(tree.children[0].children[0].data)
             required_file, required_rank = self.disambiguation(tree.children[1])
             if tree.children[2].data == "capture":
                 self.to_coord = self.coord(tree.children[3])
@@ -77,18 +79,20 @@ class ChessInterpreter():
             self.to_coord = self.coord(tree.children[2])
             self.set_piece("p")
             if child_index_is_type(tree, 1, "promotion"):
-                self.promotion(tree)
+                self.promotion(tree.children[1])
         elif child_index_is_type(tree, 0, "coord"):
             self.to_coord = self.coord(tree.children[0])
             self.set_piece("p")
             if child_index_is_type(tree, 1, "promotion"):
-                self.promotion(tree)
-        else:
-            self.set_piece(tree.children[0].data)
+                self.promotion(tree.children[1])
+        elif child_index_is_type(tree, 0, "piece_type"):
+            self.set_piece(tree.children[0].children[0].data)
             if tree.children[1].data == "capture":
                 self.to_coord = self.coord(tree.children[2])
             else:
                 self.to_coord = self.coord(tree.children[1])
+        else:
+            raise PGNInterpreterError("Error while running PGN near: '" + str(tree) + "'")
         from_coord, threaten, special = self.find_piece_for_move(required_file, required_rank, threaten)
         if self.promotion_type is not None:
             self.to_coord = (self.to_coord[0], self.to_coord[1], threaten, self.promotion_type)
@@ -152,7 +156,7 @@ class ChessInterpreter():
         return required_file, required_rank
 
     def promotion(self, tree):
-        promotion = tree.children[1].children[0].data
+        promotion = str(tree.children[1].children[0].data).lower()
         promotion = promotion.upper() if self.board.current_player == 1 else promotion
         self.promotion_type = promotion
 
