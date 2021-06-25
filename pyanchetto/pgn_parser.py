@@ -69,6 +69,7 @@ class PGNParser(Parser):
         self.lexer.set_lexemes({'[', ']', ' '})
         t = self.consume()
         key = self.consume()
+        self.consume_whitespace()
         value_str = ""
         t = self.consume()
         while str(t) != ']':
