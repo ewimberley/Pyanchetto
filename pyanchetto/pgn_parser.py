@@ -1,4 +1,4 @@
-from recursive_parser import *
+from pyanchetto.recursive_parser import *
 
 RANKS = {'1', '2', '3', '4', '5', '6', '7', '8'}
 FILES = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'}
