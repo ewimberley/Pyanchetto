@@ -2,7 +2,7 @@
 
 from distutils.core import setup
 from setuptools import setup
-from Cython.Build import cythonize
+#from Cython.Build import cythonize
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
