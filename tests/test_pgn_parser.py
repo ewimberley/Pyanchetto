@@ -77,5 +77,13 @@ class TestParser(unittest.TestCase):
         assert str(tokens) == tokens_str
         tree_str = "root: [pgn: [turn: [move_number: [1],move: [piece_type: [N],coord: [file: [c],rank: [3]]],move: [coord: [file: [f],rank: [5]]]],turn: [move_number: [2],move: [coord: [file: [e],rank: [4]]],move: [file: [f],capture,coord: [file: [e],rank: [4]]]],turn: [move_number: [3],move: [piece_type: [N],capture,coord: [file: [e],rank: [4]]],move: [piece_type: [N],coord: [file: [f],rank: [6]]]],turn: [move_number: [4],move: [piece_type: [N],capture,coord: [file: [f],rank: [6]],move_modifiers: [+]],move: [file: [g],capture,coord: [file: [f],rank: [6]]]],turn: [move_number: [5],move: [piece_type: [Q],coord: [file: [h],rank: [5]],move_modifiers: [#]]],outcome: [white_win]]]"
         assert str(tree) == tree_str
-        
+
+    def test_bad_syntax(self):
+        move = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">"
+        try:
+            tree, tokens = self.parse(move)
+            assert False
+        except:
+            assert True
+
 

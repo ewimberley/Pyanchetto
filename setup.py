@@ -19,5 +19,6 @@ setup(name='pyanchetto',
           "Bug Tracker": "https://github.com/ewimberley/Pyanchetto/issues",
       },
       python_requires=">=3.6",
+      install_requires="yarp-parser>=0.1a0",
       #ext_modules=cythonize(["pyanchetto/chess.pyx"])
       )
