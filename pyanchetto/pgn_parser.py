@@ -1,4 +1,4 @@
-from pyanchetto.recursive_parser import *
+from yarp_parser.recursive_parser import *
 
 NUMBER_REGEX = "^[0-9]+$"
 RANKS = {'1', '2', '3', '4', '5', '6', '7', '8'}
