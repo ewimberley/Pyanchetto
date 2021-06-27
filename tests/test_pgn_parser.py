@@ -14,13 +14,9 @@ class TestParser(unittest.TestCase):
         tree = parser.tree
         tokens = parser.tokens
         #parser.pretty_print()
-        print(tree)
-        print(tokens)
+        #print(f"Tree: {tree}")
+        #print(f"Tokens: {tokens}")
         return tree, tokens
-
-    #def test_simple(self):
-    #    move = "1. Nc3 Nf6"
-    #    self.parse(move)
 
     def test_king_side_castle(self):
         move = "1. O-O 1/2-1/2"
@@ -80,10 +76,19 @@ class TestParser(unittest.TestCase):
 
     def test_bad_syntax(self):
         move = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">"
+        detected_error = False
         try:
             tree, tokens = self.parse(move)
-            assert False
-        except:
-            assert True
+        except Exception as e:
+            detected_error = True
+        assert detected_error
 
+    def test_bad_syntax2(self):
+        move = "1. Nc3f5 1/2-1/2"
+        detected_error = False
+        try:
+            tree, tokens = self.parse(move)
+        except Exception as e:
+            detected_error = True
+        assert detected_error
 

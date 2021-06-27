@@ -16,7 +16,7 @@ WHITE_WIN = ['1', '-', '0']
 KINGSIDE_CASTLE = ['O', '-', 'O']
 QUEENSIDE_CASTLE = ['O', '-', 'O', '-', 'O']
 
-normal_mode_lexemes = {
+normal_mode_lexemes = set({
         #metadata
         '[', ']', '"',
         #comments
@@ -27,7 +27,7 @@ normal_mode_lexemes = {
         '?', '!', GLYPH,
         #misc
         '-', '/', ' '
-}
+})
 normal_mode_lexemes.update(FILES)
 normal_mode_lexemes.update(PIECES)
 
@@ -48,6 +48,7 @@ class PGNParser(Parser):
 
     def parse(self):
         super().parse()
+        self.lexer.ignore_whitespace = False
         self.pgn()
 
     @lexemes(normal_mode_lexemes)
@@ -88,25 +89,33 @@ class PGNParser(Parser):
             comment_str += str(t)
             t = self.consume()
         self.create_append(comment_str)
-        self.consume_whitespace()
 
     @ast("anno_glyph", optional=[GLYPH])
     def anno_glyph(self, tokens):
         num_str = self.parser_number()
         self.create_append(num_str)
-        self.consume_whitespace()
 
+    turn_lexemes = normal_mode_lexemes.union({' '})
+    @lexemes(turn_lexemes)
     @ast("turn")
     def turn(self):
+        space_between_moves = False
         self.move_number()
+        self.consume_whitespace()
         self.move()
+        space_between_moves = self.consume_whitespace() or space_between_moves
         self.anno_glyph()
+        space_between_moves = self.consume_whitespace() or space_between_moves
         self.comment()
+        space_between_moves = self.consume_whitespace() or space_between_moves
         if self.match_pattern([RegularExpression(NUMBER_REGEX), DOT]):
             self.move_number()
+        space_between_moves = self.consume_whitespace() or space_between_moves
         move_lookahead = PIECES.union(FILES)
         move_lookahead.add('O') #castle
         if self.match_pattern([move_lookahead]):
+            if not space_between_moves:
+                raise SyntaxError("space between half moves", None, self.lexer)
             self.move()
         self.consume_whitespace()
         self.anno_glyph()
@@ -121,7 +130,6 @@ class PGNParser(Parser):
         t = self.peak()
         while self.accept(DOT):
             pass
-        self.consume_whitespace()
 
     def parser_number(self):
         num_str = ""
@@ -140,7 +148,6 @@ class PGNParser(Parser):
                                 "move description")
         if self.match_pattern([[CHECK, CHECKMATE, "!", "?"]]): #FIXME add winning strings?
             self.move_modifiers()
-        self.consume_whitespace()
 
     def simple_move(self): #piece_type disambiguation? capture? coord move_modifiers?
         self.piece_type()
