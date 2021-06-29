@@ -8,7 +8,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(name='pyanchetto',
-      version='0.2.1',
+      version='0.2.2',
       description='A python chess engine.',
       author='Eric Wimberley',
       packages=['pyanchetto'],
@@ -19,6 +19,6 @@ setup(name='pyanchetto',
           "Bug Tracker": "https://github.com/ewimberley/Pyanchetto/issues",
       },
       python_requires=">=3.6",
-      install_requires="yarp-parser>=0.1a0",
+      install_requires="yarp-parser>=0.2",
       #ext_modules=cythonize(["pyanchetto/chess.pyx"])
       )
