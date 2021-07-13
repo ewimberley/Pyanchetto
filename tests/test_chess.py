@@ -109,6 +109,12 @@ class TestChess(unittest.TestCase):
         self.board.init_player_pieces()
         assert self.board.check_check(self.board.current_player)
         #TODO check that non-threatening moves do not place king in check
-        
+
+    def test_captured(self):
+        self.board.board = self.empty_board()
+        self.board.captured_pieces[0] = (6, (4,4))
+        self.board.move_list.append(((0,0), (4,4)))
+        self.assertListEqual(['P'], self.board.get_captured_pieces())
+
     def empty_board(self):
         return [[0 for col in range(8)] for row in range(8)]

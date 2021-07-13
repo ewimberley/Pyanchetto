@@ -108,6 +108,7 @@ class Chess:
 
 
     def player_pieces_of_type(self, piece_type, player):
+        """Get all pieces of a certain type for a player."""
         for coord in self.player_pieces_list[player - 1]:
             if self.get_coord(coord) in pieces_type_map[piece_type]:
                 yield coord
@@ -178,10 +179,8 @@ class Chess:
         ----------
         player: int
             The player being threatened (usually the current player).
-
         coord: tuple
             Return early if the threat to this coordinate is greater than max_threats.
-
         max_threats: int (optional, default 1000)
             Return early if threats to coord are greater than this.
 
@@ -190,7 +189,7 @@ class Chess:
         A matrix indicating the number of threats to each coordinate on the board.
         """
         threatened = [[0 for col in range(SIZE)] for row in range(SIZE)]
-        for move in self._compute_threats(player):
+        for move in self.__compute_threats(player):
             if move[2]:
                 threatened[move[1]][move[0]] += 1
                 if coord == move:
@@ -199,7 +198,7 @@ class Chess:
         return threatened
 
 
-    def _compute_threats(self, player):
+    def __compute_threats(self, player):
         pieces = copy.deepcopy(self.player_pieces(inverse_color(player)))
         for piece in pieces:
             for move in self.valid_piece_moves(piece, False):
@@ -216,7 +215,7 @@ class Chess:
         A precomputed threat matrix can be provided as an optimization.
         """
         #XXX can we use the optimized threats function to just check the king square?
-        threats = self._compute_threats(player) if threats is None else threats
+        threats = self.__compute_threats(player) if threats is None else threats
         king = list(self.player_pieces_of_type("K", player))
         return (king[0][0], king[0][1], True) in threats
 
@@ -228,42 +227,8 @@ class Chess:
             #below line used for debugging valid moves only
             #valid_moves = list(valid_moves)
         if not validate or to_coord in valid_moves:
-            pgn_castle, pgn_promotion, file_disambiguation, rank_disambiguation = None, "", "", ""
-            if self.is_type(from_coord, "K") and from_coord in king_positions:
-                if to_coord in king_castle_end_positions:
-                    castle_pos_index = king_castle_end_positions.index(to_coord)
-                    pgn_castle = "O-O-O " if castle_pos_index == 0 or castle_pos_index == 2 else "O-O "
-            to_color = self.color(to_coord)
-            capture_str = "x" if to_color != EMPTY else ""
             if pgn_gen and validate:
-                if pgn_castle is not None:
-                    pgn = pgn_castle
-                else:
-                    pgn_type = pieces[self.get_coord(from_coord)].upper()
-                    piece_type = self.get_coord(from_coord)
-                    #TODO piece disambiguation if same type of piece can move to to_coord
-                    for piece in self.__type_in_coords(self.player_pieces_list[self.current_player-1], piece_type):
-                        if self.get_coord(piece) == piece_type and piece != from_coord:
-                            for move in self.valid_piece_moves(piece):
-                                if move == to_coord:
-                                    if piece[0] == from_coord[0]:
-                                        rank_disambiguation = str(from_coord[1] + 1)
-                                    else:
-                                        file_disambiguation = index_to_file(from_coord[0])
-                    notation_coord = coord_to_notation(to_coord)
-                    if pgn_type == "P":
-                        if len(to_coord) == 4 and to_coord[3] != 6 and to_coord[3] != 12:
-                            pgn_promotion = "=" + to_coord[3].upper()
-                        if capture_str != "":
-                            pgn = index_to_file(from_coord[0]) + capture_str + notation_coord + pgn_promotion
-                        else:
-                            pgn = notation_coord + pgn_promotion
-                    else:
-                        pgn = pgn_type + file_disambiguation + rank_disambiguation + capture_str + notation_coord
-
-                if self.current_player == WHITE:
-                    self.pgn_str.append(str(self.get_full_move_clock()) + ".")
-                self.pgn_str.append(pgn)
+                self.__append_move_to_pgn(from_coord, pgn_gen, to_coord, validate)
             if self.is_type(from_coord, "R") and from_coord in rook_positions_index:
                 rook_index = rook_positions_index[from_coord]
                 if self.rooks_moved[rook_index] == -1:
@@ -278,20 +243,58 @@ class Chess:
                     rook_position = rook_positions[rook_index]
                     if self.is_type(rook_position, "R") and self.is_color(rook_position, self.current_player):
                         self.rooks_moved[rook_index] = on_move
-                        self.__move(rook_position, rook_castle_end_positions[rook_index])
+                        self.__move_piece(rook_position, rook_castle_end_positions[rook_index])
                         castle_pos_index = king_castle_end_positions.index(to_coord)
                         self.kings_castled[king_index] = on_move
-            self.__move(from_coord, to_coord)
+            self.__move_piece(from_coord, to_coord)
             self.move_list.append((from_coord, (to_coord[0], to_coord[1])))
             if len(to_coord) == 4:
                 self.__handle_special(from_coord, to_coord)
             self.current_player = inverse_color(self.current_player)
             if pgn_gen and validate:
-                self.append_game_state_to_pgn()
+                self.__append_game_state_to_pgn()
         else:
             raise BadMoveException("Move is invalid")
 
-    def append_game_state_to_pgn(self):
+
+    def __append_move_to_pgn(self, from_coord, pgn_gen, to_coord, validate):
+        pgn_castle, pgn_promotion, file_disambiguation, rank_disambiguation = None, "", "", ""
+        if self.is_type(from_coord, "K") and from_coord in king_positions:
+            if to_coord in king_castle_end_positions:
+                castle_pos_index = king_castle_end_positions.index(to_coord)
+                pgn_castle = "O-O-O " if castle_pos_index == 0 or castle_pos_index == 2 else "O-O "
+        to_color = self.color(to_coord)
+        capture_str = "x" if to_color != EMPTY else ""
+        if pgn_castle is not None:
+            pgn = pgn_castle
+        else:
+            pgn_type = pieces[self.get_coord(from_coord)].upper()
+            piece_type = self.get_coord(from_coord)
+            # TODO piece disambiguation if same type of piece can move to to_coord
+            for piece in self.__type_in_coords(self.player_pieces_list[self.current_player - 1], piece_type):
+                if self.get_coord(piece) == piece_type and piece != from_coord:
+                    for move in self.valid_piece_moves(piece):
+                        if move == to_coord:
+                            if piece[0] == from_coord[0]:
+                                rank_disambiguation = str(from_coord[1] + 1)
+                            else:
+                                file_disambiguation = index_to_file(from_coord[0])
+            notation_coord = coord_to_notation(to_coord)
+            if pgn_type == "P":
+                if len(to_coord) == 4 and to_coord[3] != 6 and to_coord[3] != 12:
+                    pgn_promotion = "=" + to_coord[3].upper()
+                if capture_str != "":
+                    pgn = index_to_file(from_coord[0]) + capture_str + notation_coord + pgn_promotion
+                else:
+                    pgn = notation_coord + pgn_promotion
+            else:
+                pgn = pgn_type + file_disambiguation + rank_disambiguation + capture_str + notation_coord
+        if self.current_player == WHITE:
+            self.pgn_str.append(str(self.__get_full_move_clock()) + ".")
+        self.pgn_str.append(pgn)
+
+
+    def __append_game_state_to_pgn(self):
         """
         Append information related to game state to the PGN move list, including
         move annotations and game termination markers.
@@ -311,7 +314,7 @@ class Chess:
                 self.pgn_str.append(game_termination_markers[0])
 
 
-    def __move(self, from_coord, to_coord):
+    def __move_piece(self, from_coord, to_coord):
         from_color = self.color(from_coord)
         to_color = self.color(to_coord)
         if to_color != EMPTY:
@@ -342,13 +345,13 @@ class Chess:
                     rook_index = king_castle_end_positions_index[king_pos]
                     king_index = self.current_player - 1
                     rook_pos = rook_castle_end_positions[rook_index]
-                    self.__move((rook_pos[0], rook_pos[1]), rook_positions[rook_index])
+                    self.__move_piece((rook_pos[0], rook_pos[1]), rook_positions[rook_index])
                     self.rooks_moved[rook_index] = -1
                     self.kings_castled[king_index] = -1
         elif last_move_index in self.promoted_pieces:
             self.set_coord(last_move[1], 6 if self.current_player == WHITE else 12)
             self.promoted_pieces.pop(last_move_index)
-        self.__move(last_move[1], last_move[0])
+        self.__move_piece(last_move[1], last_move[0])
         if captured is not None:
             self.set_coord(captured[1], captured[0])
             self.player_pieces_list[self.color(captured[1]) - 1].add(captured[1])
@@ -448,7 +451,6 @@ class Chess:
         ----------
         coords: list of tuples
             A list of coordinates to check for pieces and threats
-
         threats: matrix object
             A board matrix containing the number of threats per square
 
@@ -480,10 +482,8 @@ class Chess:
         ----------
         moves: list of tuples
             A set of moves to append diagonal moves to.
-
         f: int
             The current file of the piece.
-
         r: int
             The current rank of the piece.
             
@@ -503,10 +503,8 @@ class Chess:
         ----------
         moves: list of tuples
             A set of moves to append diagonal moves to.
-
         f: int
             The current file of the piece.
-
         r: int
             The current rank of the piece.
             
@@ -527,10 +525,8 @@ class Chess:
         ----------
         moves: list of tuples
             A set of moves to append moves to.
-
         f: int
             The current file of the piece.
-
         r: int
             The current rank of the piece.
 
@@ -559,10 +555,8 @@ class Chess:
         ----------
         f: int
             The current file of the piece
-
         r: int
             The current rank of the piece
-
         offset: tuple
             A vector to travel in (e.g. if start is (0,0) and vector is (1,1)
             move set will be (0,0), (1,1), (2,2), (3,3), etc.
@@ -630,17 +624,17 @@ class Chess:
                 hash.append(" - ")
         else:
             hash.append(" - ")
-        hash.append(str(self.get_half_move_clock()))
-        full_moves = self.get_full_move_clock()
+        hash.append(str(self.__get_half_move_clock()))
+        full_moves = self.__get_full_move_clock()
         hash.append(" " + str(full_moves))
         return "".join(hash)
 
 
-    def get_full_move_clock(self):
+    def __get_full_move_clock(self):
         return math.floor(len(self.move_list) / 2) + 1
 
 
-    def get_half_move_clock(self):
+    def __get_half_move_clock(self):
         move_index = len(self.move_list)
         if move_index > 0:
             last_cap_or_pawn = move_index
@@ -658,3 +652,11 @@ class Chess:
     def pgn(self):
         """Return the PGN string for the current state of the game."""
         return " ".join(self.pgn_str)
+
+
+    def get_captured_pieces(self):
+        """Get the types of all captured pieces."""
+        capture_pieces = []
+        for move_num in range(len(self.move_list)):
+            capture_pieces.append(pieces[self.captured_pieces[move_num][0]])
+        return capture_pieces
