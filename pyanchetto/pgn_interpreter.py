@@ -116,6 +116,7 @@ class ChessInterpreter():
                 self.to_coord = (self.to_coord[0], self.to_coord[1], threaten)
         try:
             logging.debug("Player " + str(self.board.current_player) + " moving " + self.piece + " to " + str(self.to_coord))
+            logging.debug(f"Move: {from_coord}, {self.to_coord}")
             self.board.move(from_coord, self.to_coord)
             logging.info("\n" + str(self.board))
         except Exception as e:

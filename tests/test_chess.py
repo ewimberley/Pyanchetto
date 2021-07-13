@@ -1,6 +1,6 @@
 import unittest
 
-from pyanchetto.chess import Chess
+from pyanchetto.chess import *
 
 class TestChess(unittest.TestCase):
     def setUp(self):
@@ -115,6 +115,24 @@ class TestChess(unittest.TestCase):
         self.board.captured_pieces[0] = (6, (4,4))
         self.board.move_list.append(((0,0), (4,4)))
         self.assertListEqual([6], self.board.get_captured_pieces())
+
+    def test_pgn(self):
+        self.board.move((0, 1), (0, 2, False))
+        pgn = self.board.pgn()
+        self.assertEqual("1. a3", pgn)
+
+    def test_board_state(self):
+        self.assertEqual(NORMAL, self.board.game_state())
+        self.board.move((1, 0), (2, 2, True))
+        self.board.move((5, 6), (5, 4, False))
+        self.board.move((4, 1), (4, 3, False))
+        self.board.move((5, 4), (4, 3, True))
+        self.board.move((2, 2), (4, 3, True))
+        self.board.move((6, 7), (5, 5, True))
+        self.board.move((4, 3), (5, 5, True))
+        self.board.move((6, 6), (5, 5, True))
+        self.board.move((3, 0), (7, 4, True))
+        self.assertEqual(CHECKMATE, self.board.game_state())
 
     def empty_board(self):
         return [[0 for col in range(8)] for row in range(8)]
