@@ -114,7 +114,7 @@ class TestChess(unittest.TestCase):
         self.board.board = self.empty_board()
         self.board.captured_pieces[0] = (6, (4,4))
         self.board.move_list.append(((0,0), (4,4)))
-        self.assertListEqual(['P'], self.board.get_captured_pieces())
+        self.assertListEqual([6], self.board.get_captured_pieces())
 
     def empty_board(self):
         return [[0 for col in range(8)] for row in range(8)]
