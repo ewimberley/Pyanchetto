@@ -658,5 +658,6 @@ class Chess:
         """Get the types of all captured pieces."""
         capture_pieces = []
         for move_num in range(len(self.move_list)):
-            capture_pieces.append(self.captured_pieces[move_num][0])
+            if move_num in self.captured_pieces:
+                capture_pieces.append(self.captured_pieces[move_num][0])
         return capture_pieces

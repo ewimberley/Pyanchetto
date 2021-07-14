@@ -22,6 +22,7 @@ class ChessInterpreter():
         self.turn_number = 0
         self.verbose = False
         self.fens = []
+        self.captured = []
         self.termination_marker = None
         self.metadata_map = {}
 
@@ -71,6 +72,7 @@ class ChessInterpreter():
                     raise PGNInterpreterError("More than two pieces moved in one turn.")
                 self.__player_turn(child)
                 self.fens.append(self.board.fen())
+                self.captured.append(self.board.get_captured_pieces())
                 on_move += 1
 
     def __player_turn(self, tree):
