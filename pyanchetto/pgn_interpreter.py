@@ -37,6 +37,7 @@ class ChessInterpreter():
         verbose: log debug information and intermediate board positions if true
         """
         self.fens.append(self.board.fen())
+        self.captured.append(self.board.get_captured_pieces())
         self.verbose = verbose
         if verbose:
             logging.basicConfig(level=logging.DEBUG)
