@@ -78,7 +78,7 @@ class Chess:
 
 
     def init_player_pieces(self):
-        self.player_pieces_list = [{c for c in all_coords if self.is_color(c, color)} for color in (WHITE, BLACK)]
+        self.player_pieces_list = [{c for c in all_coords if self.color(c) == color} for color in (WHITE, BLACK)]
 
 
     def set_coord(self, coord: tuple, piece):
@@ -87,11 +87,6 @@ class Chess:
 
     def get_coord(self, coord: tuple):
         return self.board[coord[1]][coord[0]]
-
-
-    def is_color(self, coord: tuple, color):
-        """Returns True if the color (player) of the piece at a location is the given color."""
-        return self.color(coord) == color
 
 
     def color(self, coord: tuple):
@@ -104,13 +99,13 @@ class Chess:
 
     def is_type(self, coord: tuple, piece_type: str):
         """Returns true if the piece at a location is the given type of piece."""
-        return pieces[self.get_coord(coord)].lower() == piece_type.lower()
+        return pieces[self.board[coord[1]][coord[0]]].lower() == piece_type.lower()
 
 
     def player_pieces_of_type(self, piece_type, player):
         """Get all pieces of a certain type for a player."""
         for coord in self.player_pieces_list[player - 1]:
-            if self.get_coord(coord) in pieces_type_map[piece_type]:
+            if self.board[coord[1]][coord[0]] in pieces_type_map[piece_type]:
                 yield coord
 
 
@@ -146,7 +141,7 @@ class Chess:
 
     def valid_piece_moves(self, p, validate=True, threats=None):
         # TODO detect check and checkmate
-        p_type = self.get_coord(p)
+        p_type = self.board[p[1]][p[0]]
         p_type = p_type - 6 if p_type > 6 else p_type
         funcs = [lambda: [], self.king, self.queen, self.rook, self.bishop, self.knight, self.pawn]
         moves = funcs[p_type](p[0], p[1], threats) if p_type == 1 else funcs[p_type](p[0], p[1])
@@ -220,36 +215,36 @@ class Chess:
         return (king[0][0], king[0][1], True) in threats
 
 
-    def move(self, from_coord, to_coord, validate=True, pgn_gen=True):
+    def move(self, fromc, to, validate=True, pgn_gen=True):
         if validate:
-            threats = self.compute_threat_matrix(self.current_player) if self.is_type(from_coord, "K") else None
-            valid_moves = self.valid_piece_moves(from_coord, True, threats) if self.is_color(from_coord, self.current_player) else {}
+            threats = self.compute_threat_matrix(self.current_player) if self.is_type(fromc, "K") else None
+            valid_moves = self.valid_piece_moves(fromc, True, threats) if self.color(fromc) == self.current_player else {}
             #below line used for debugging valid moves only
             #valid_moves = list(valid_moves)
-        if not validate or to_coord in valid_moves:
+        if not validate or to in valid_moves:
             if pgn_gen and validate:
-                self.__append_move_to_pgn(from_coord, pgn_gen, to_coord, validate)
-            if self.is_type(from_coord, "R") and from_coord in rook_positions_index:
-                rook_index = rook_positions_index[from_coord]
+                self.__append_move_to_pgn(fromc, pgn_gen, to, validate)
+            if self.is_type(fromc, "R") and fromc in rook_positions_index:
+                rook_index = rook_positions_index[fromc]
                 if self.rooks_moved[rook_index] == -1:
                     self.rooks_moved[rook_index] = len(self.move_list)
-            elif self.is_type(from_coord, "K") and from_coord in king_positions:
-                king_index = king_positions.index(from_coord)
+            elif self.is_type(fromc, "K") and fromc in king_positions:
+                king_index = king_positions.index(fromc)
                 on_move = len(self.move_list)
                 if self.kings_moved[king_index] == -1:
                     self.kings_moved[king_index] = on_move
-                if to_coord in king_castle_end_positions and self.kings_moved[king_index] == on_move:
-                    rook_index = king_castle_end_positions_index[to_coord]
+                if to in king_castle_end_positions and self.kings_moved[king_index] == on_move:
+                    rook_index = king_castle_end_positions_index[to]
                     rook_position = rook_positions[rook_index]
-                    if self.is_type(rook_position, "R") and self.is_color(rook_position, self.current_player):
+                    if self.is_type(rook_position, "R") and self.color(rook_position) == self.current_player:
                         self.rooks_moved[rook_index] = on_move
                         self.__move_piece(rook_position, rook_castle_end_positions[rook_index])
-                        castle_pos_index = king_castle_end_positions.index(to_coord)
+                        castle_pos_index = king_castle_end_positions.index(to)
                         self.kings_castled[king_index] = on_move
-            self.__move_piece(from_coord, to_coord)
-            self.move_list.append((from_coord, (to_coord[0], to_coord[1])))
-            if len(to_coord) == 4:
-                self.__handle_special(from_coord, to_coord)
+            self.__move_piece(fromc, to)
+            self.move_list.append((fromc, (to[0], to[1])))
+            if len(to) == 4:
+                self.__handle_special(fromc, to)
             self.current_player = inverse_color(self.current_player)
             if pgn_gen and validate:
                 self.__append_game_state_to_pgn()
@@ -257,34 +252,34 @@ class Chess:
             raise BadMoveException("Move is invalid")
 
 
-    def __append_move_to_pgn(self, from_coord, pgn_gen, to_coord, validate):
+    def __append_move_to_pgn(self, fromc, pgn_gen, to, validate):
         pgn_castle, pgn_promotion, file_disambiguation, rank_disambiguation = None, "", "", ""
-        if self.is_type(from_coord, "K") and from_coord in king_positions:
-            if to_coord in king_castle_end_positions:
-                castle_pos_index = king_castle_end_positions.index(to_coord)
+        if self.is_type(fromc, "K") and fromc in king_positions:
+            if to in king_castle_end_positions:
+                castle_pos_index = king_castle_end_positions.index(to)
                 pgn_castle = "O-O-O " if castle_pos_index == 0 or castle_pos_index == 2 else "O-O "
-        to_color = self.color(to_coord)
+        to_color = self.color(to)
         capture_str = "x" if to_color != EMPTY else ""
         if pgn_castle is not None:
             pgn = pgn_castle
         else:
-            pgn_type = pieces[self.get_coord(from_coord)].upper()
-            piece_type = self.get_coord(from_coord)
+            pgn_type = pieces[self.get_coord(fromc)].upper()
+            piece_type = self.get_coord(fromc)
             # TODO piece disambiguation if same type of piece can move to to_coord
             for piece in self.__type_in_coords(self.player_pieces_list[self.current_player - 1], piece_type):
-                if self.get_coord(piece) == piece_type and piece != from_coord:
+                if self.board[piece[1]][piece[0]] == piece_type and piece != fromc:
                     for move in self.valid_piece_moves(piece):
-                        if move == to_coord:
-                            if piece[0] == from_coord[0]:
-                                rank_disambiguation = str(from_coord[1] + 1)
+                        if move == to:
+                            if piece[0] == fromc[0]:
+                                rank_disambiguation = str(fromc[1] + 1)
                             else:
-                                file_disambiguation = index_to_file(from_coord[0])
-            notation_coord = coord_to_notation(to_coord)
+                                file_disambiguation = index_to_file(fromc[0])
+            notation_coord = coord_to_notation(to)
             if pgn_type == "P":
-                if len(to_coord) == 4 and to_coord[3] != 6 and to_coord[3] != 12:
-                    pgn_promotion = "=" + to_coord[3].upper()
+                if len(to) == 4 and to[3] != 6 and to[3] != 12:
+                    pgn_promotion = "=" + to[3].upper()
                 if capture_str != "":
-                    pgn = index_to_file(from_coord[0]) + capture_str + notation_coord + pgn_promotion
+                    pgn = index_to_file(fromc[0]) + capture_str + notation_coord + pgn_promotion
                 else:
                     pgn = notation_coord + pgn_promotion
             else:
@@ -314,17 +309,17 @@ class Chess:
                 self.pgn_str.append(game_termination_markers[0])
 
 
-    def __move_piece(self, from_coord, to_coord):
-        from_color = self.color(from_coord)
-        to_color = self.color(to_coord)
+    def __move_piece(self, fromc, to):
+        from_color = self.color(fromc)
+        to_color = self.color(to)
         if to_color != EMPTY:
-            captured = (to_coord[0], to_coord[1])
-            self.captured_pieces[len(self.move_list)] = (self.get_coord(captured), captured)
+            captured = (to[0], to[1])
+            self.captured_pieces[len(self.move_list)] = (self.board[to[1]][to[0]], captured)
             self.player_pieces_list[to_color - 1].remove(captured)
-        self.player_pieces_list[from_color - 1].remove(from_coord)
-        self.player_pieces_list[from_color - 1].add((to_coord[0], to_coord[1]))
-        self.set_coord(to_coord, self.get_coord(from_coord))
-        self.set_coord(from_coord, EMPTY)
+        self.player_pieces_list[from_color - 1].remove(fromc)
+        self.player_pieces_list[from_color - 1].add((to[0], to[1]))
+        self.board[to[1]][to[0]] = self.board[fromc[1]][fromc[0]]
+        self.board[fromc[1]][fromc[0]] = EMPTY
 
 
     def __undo_last_move(self):
@@ -349,31 +344,31 @@ class Chess:
                     self.rooks_moved[rook_index] = -1
                     self.kings_castled[king_index] = -1
         elif last_move_index in self.promoted_pieces:
-            self.set_coord(last_move[1], 6 if self.current_player == WHITE else 12)
+            self.board[last_move[1][1]][last_move[1][0]] = 6 if self.current_player == WHITE else 12
             self.promoted_pieces.pop(last_move_index)
         self.__move_piece(last_move[1], last_move[0])
         if captured is not None:
-            self.set_coord(captured[1], captured[0])
+            self.board[captured[1][1]][captured[1][0]] = captured[0]
             self.player_pieces_list[self.color(captured[1]) - 1].add(captured[1])
 
-    def __handle_special(self, from_coord, to_coord):
+    def __handle_special(self, fromc, to):
         """Handles one-off move types like en pessant and pawn promotion when applying a move."""
-        if to_coord[3] == 6 or to_coord[3] == 12: #en pessant
-            captured = (to_coord[0], from_coord[1])
+        if to[3] == 6 or to[3] == 12: #en pessant
+            captured = (to[0], fromc[1])
             captured_color = self.color(captured)
-            self.captured_pieces[len(self.move_list) - 1] = (self.get_coord(captured), captured)
-            self.set_coord(captured, EMPTY)
+            self.captured_pieces[len(self.move_list) - 1] = (self.board[captured[1]][captured[0]], captured)
+            self.board[captured[1]][captured[0]] = EMPTY
             self.player_pieces_list[captured_color - 1].remove(captured)
         else: #promotion
-            promotion_type = to_coord[3]
-            if promotion_type.upper() in promotion_candidates and self.is_type(to_coord, "P"):
-                if self.current_player == WHITE and to_coord[1] == 7:
-                    self.set_coord(to_coord, pieces_index[promotion_type.upper()])
-                elif self.current_player == BLACK and to_coord[1] == 0:
-                    self.set_coord(to_coord, pieces_index[promotion_type.lower()])
+            promotion_type = to[3]
+            if promotion_type.upper() in promotion_candidates and self.is_type(to, "P"):
+                if self.current_player == WHITE and to[1] == 7:
+                    self.board[to[1]][to[0]] = pieces_index[promotion_type.upper()]
+                elif self.current_player == BLACK and to[1] == 0:
+                    self.board[to[1]][to[0]] = pieces_index[promotion_type.lower()]
                 else:
                     raise BadPromotionException("Cannot promote from this position")
-                self.promoted_pieces[len(self.move_list)-1] = (self.get_coord(to_coord), to_coord)
+                self.promoted_pieces[len(self.move_list)-1] = (self.board[to[1]][to[0]], to)
             else:
                 raise BadPromotionException("Invalid promotion")
 
@@ -387,8 +382,8 @@ class Chess:
     def pawn(self, f, r):
         """Returns all valid moves for a pawn at file f and rank r including en pessant and valid promotions."""
         color = self.color((f, r))
-        warps = [[(0, 1), (0, 2)] if r == 1 and self.is_color((f, r + 1), EMPTY) else [(0, 1)]]
-        warps.append([(0, -1), (0, -2)] if r == 6 and self.is_color((f, r - 1), EMPTY) else [(0, -1)])
+        warps = [[(0, 1), (0, 2)] if r == 1 and self.color((f, r + 1)) == EMPTY else [(0, 1)]]
+        warps.append([(0, -1), (0, -2)] if r == 6 and self.color((f, r - 1)) == EMPTY else [(0, -1)])
         moves = self.__warps([], (f, r), warps[color - 1], (WHITE, BLACK), False)
         for move in self.__warps(moves, (f, r), pawn_capture_warps[color - 1], (EMPTY, color)):
             if color == WHITE and move[1] == 7:
@@ -401,22 +396,23 @@ class Chess:
                 yield move
         if len(self.move_list) > 0: #en pessant - check that last move was a double pawn advance
             last_move = self.move_list[-1]
-            if self.is_type(last_move[1], "P") and self.is_color(last_move[1], inverse_color(color)):
+            piece_type = self.board[last_move[1][1]][last_move[1][0]]
+            if (piece_type == 6 or piece_type == 12) and self.color(last_move[1]) == inverse_color(color):
                 if abs(last_move[1][1] - last_move[0][1]) == 2 and abs(last_move[0][0] - f) == 1 and last_move[1][1] == r:
                     if color == 2:
-                        yield (last_move[0][0], r - 1, False, self.get_coord((f, r)))
+                        yield (last_move[0][0], r - 1, False, self.board[r][f])
                     else:
-                        yield (last_move[0][0], r + 1, False, self.get_coord((f, r)))
+                        yield (last_move[0][0], r + 1, False, self.board[r][f])
 
 
     def rook(self, f, r):
         """Returns all valid moves for a rook at file f and rank r."""
-        return self.orthogonal([], f, r)
+        return self.__orthogonal([], f, r)
 
 
     def bishop(self, f, r):
         """Returns all valid moves for a bishop at file f and rank r."""
-        return self.diagonal([], f, r)
+        return self.__diagonal([], f, r)
 
 
     def knight(self, f, r):
@@ -426,7 +422,7 @@ class Chess:
 
     def queen(self, f, r):
         """Returns all valid moves for a queen at file f and rank r."""
-        return self.orthogonal(self.diagonal([], f, r), f, r)
+        return self.__orthogonal(self.__diagonal([], f, r), f, r)
 
 
     def king(self, f, r, threats=None):
@@ -460,21 +456,22 @@ class Chess:
         """
         for coord in coords:
             status = 0 if threats is None else threats[coord[1]][coord[0]]
-            if self.get_coord(coord) != 0 or status != 0:
+            if self.board[coord[1]][coord[0]] != 0 or status != 0:
                 return False
         return True
 
 
     def __warps(self, moves, coord, relative_warps, excluded, threat=True):
+        #Warps can result in capturing the piece at the destination, so threat is True
         for move in moves:
             yield move
         for w in relative_warps:
             warp = (coord[0] + w[0], coord[1] + w[1], threat)
-            if in_range(warp) and self.color(warp) not in excluded:
+            if warp[0] in range(SIZE) and warp[1] in range(SIZE) and self.color(warp) not in excluded:
                 yield warp
 
 
-    def orthogonal(self, moves, f, r):
+    def __orthogonal(self, moves, f, r):
         """
         Compute move set for a piece that has orthogonal (horizontal and vertical) movement.
 
@@ -495,7 +492,7 @@ class Chess:
         return self.__vectors(moves, f, r, [(1, 0), (-1, 0), (0, 1), (0, -1)])
 
 
-    def diagonal(self, moves, f, r):
+    def __diagonal(self, moves, f, r):
         """
         Compute move set for a piece that has orthogonal (horizontal and vertical) movement.
 
@@ -514,7 +511,7 @@ class Chess:
             The input list of moves with diagonal moves appended to it.
         """
         return self.__vectors(moves, f, r, [(1, 1), (-1, -1), (1, -1), (-1, 1)])
-
+    
 
     def __vectors(self, moves, f, r, offsets_list):
         """
@@ -541,44 +538,20 @@ class Chess:
         """
         for move in moves:
             yield move
-        for offset in offsets_list:
-            for move in self.__vector(f, r, offset):
-                yield move
-
-
-    def __vector(self, f, r, offset):
-        """
-        Generates moves going in a single vector from a starting position until
-        either the edge of the board or another piece is encountered.
-
-        Parameters
-        ----------
-        f: int
-            The current file of the piece
-        r: int
-            The current rank of the piece
-        offset: tuple
-            A vector to travel in (e.g. if start is (0,0) and vector is (1,1)
-            move set will be (0,0), (1,1), (2,2), (3,3), etc.
-            
-        Returns
-        _______
-        moves: list of tuples
-            The input list of moves with vectored moves appended to it.
-        """
         color = self.color((f, r))
         inv_color = inverse_color(color)
-        coord = (f + offset[1], r + offset[0], True)
-        while in_range(coord) and self.color(coord) in (inv_color, EMPTY):
-            yield coord
-            if self.color(coord) == inv_color:
-                break
-            coord = (offset[1] + coord[0], offset[0] + coord[1], coord[2])
+        for offset in offsets_list:
+            coord = (f + offset[1], r + offset[0], True)
+            while coord[0] in range(SIZE) and coord[1] in range(SIZE) and self.color(coord) in (inv_color, EMPTY):
+                yield coord
+                if self.color(coord) == inv_color:
+                    break
+                coord = (offset[1] + coord[0], offset[0] + coord[1], coord[2])
 
 
     def __type_in_coords(self, coords, type):
         for coord in coords:
-            if self.get_coord(coord) == type:
+            if self.board[coord[1]][coord[0]] == type:
                 yield coord
 
 
