@@ -121,7 +121,7 @@ class Chess:
         piece_moves = self.valid_moves_for_player(self.current_player, True)
         has_next_move = False
         for piece in piece_moves:
-            has_next_move = (next(piece_moves[piece], None) is not None) or has_next_move
+            has_next_move = has_next_move or (next(piece_moves[piece], None) is not None)
         check = self.check_check(self.current_player)
         if not has_next_move:
             return CHECKMATE if check else STALEMATE
