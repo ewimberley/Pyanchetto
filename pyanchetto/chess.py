@@ -119,11 +119,11 @@ class Chess:
         #TODO threefold repetition and fifty move rule?
         #FIXME check for impossible checkmate (king/king, king/bishop, king/knight, king/bishop v king/bishop of same color
         piece_moves = self.valid_moves_for_player(self.current_player, True)
-        moves = []
+        has_next_move = False
         for piece in piece_moves:
-            moves.extend(piece_moves[piece])
+            has_next_move = (next(piece_moves[piece], None) is not None) or has_next_move
         check = self.check_check(self.current_player)
-        if len(moves) == 0:
+        if not has_next_move:
             return CHECKMATE if check else STALEMATE
         return CHECK if check else NORMAL
 
@@ -136,11 +136,10 @@ class Chess:
 
     def valid_moves_for_player(self, player, validate=True, threats=None):
         pieces = copy.deepcopy(self.player_pieces(player))
-        return {piece: list(self.valid_piece_moves(piece, validate, threats)) for piece in pieces}
+        return {piece: self.valid_piece_moves(piece, validate, threats) for piece in pieces}
 
 
     def valid_piece_moves(self, p, validate=True, threats=None):
-        # TODO detect check and checkmate
         p_type = self.board[p[1]][p[0]]
         p_type = p_type - 6 if p_type > 6 else p_type
         funcs = [lambda: [], self.king, self.queen, self.rook, self.bishop, self.knight, self.pawn]
