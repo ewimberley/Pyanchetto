@@ -25,7 +25,7 @@ knight_warps = [(2, 1), (2, -1), (-2, 1), (-2, -1), (1, 2), (-1, 2), (1, -2), (-
 king_warps = [(1, 1), (-1, -1), (1, -1), (-1, 1), (0, 1), (0, -1), (1, 0), (-1, 0)]
 pawn_capture_warps = [[(-1, 1), (1, 1)], [(-1, -1), (1, -1)]]
 EMPTY, WHITE, BLACK = 0, 1, 2
-NORMAL, CHECK, CHECKMATE, STALEMATE = 0, 1, 2, 3
+NORMAL, CHECK, CHECKMATE, STALEMATE, DRAW = 0, 1, 2, 3, 4
 
 def file_to_index(file): return ord(file) - 97
 def index_to_file(index): return chr(index + 97)
@@ -125,6 +125,27 @@ class Chess:
         check = self.check_check(self.current_player)
         if not has_next_move:
             return CHECKMATE if check else STALEMATE
+            # check for sufficient material
+            white_set = set(self.player_pieces(WHITE))
+            black_set = set(self.player_pieces(BLACK))
+            if white_set == set({1}) and black_set == set({7}):  # king v king
+                return DRAW
+            if white_set == set({1, 4}) and black_set == set({7, 10}):  # king bishop v king bishop
+                return DRAW
+            if white_set == set({1}) and black_set == set({7, 10}):  # king v king bishop
+                return DRAW
+            if white_set == set({1, 4}) and black_set == set({7}):  # king bishop v king
+                return DRAW
+            if white_set == set({1, 5}) and black_set == set({7, 11}):  # king knight v king knight
+                return DRAW
+            if white_set == set({1}) and black_set == set({7, 11}):  # king v king knight
+                return DRAW
+            if white_set == set({1, 5}) and black_set == set({7}):  # king knight v king
+                return DRAW
+            if white_set == set({1, 5}) and black_set == set({7, 10}):  # king knight v king bishop
+                return DRAW
+            if white_set == set({1, 4}) and black_set == set({7, 11}):  # king bishop v king knight
+                return DRAW
         return CHECK if check else NORMAL
 
 
