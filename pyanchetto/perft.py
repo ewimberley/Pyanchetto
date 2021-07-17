@@ -29,7 +29,8 @@ def perft(root, branch, board, depth, max_depth, child_processes=False, queue=No
         queues = []
         for move in moves:
             clone = Chess(board)
-            clone.move(move[0], move[1])
+            #TODO pgn_gen can be turned on for benchmarking mode
+            clone.move(move[0], move[1], pgn_gen=False)
             child = MoveTree(move)
             if child_processes:
                 q = Queue()

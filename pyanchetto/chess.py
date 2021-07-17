@@ -135,7 +135,7 @@ class Chess:
 
 
     def valid_moves_for_player(self, player, validate=True, threats=None):
-        pieces = copy.deepcopy(self.player_pieces(player))
+        pieces = [p for p in self.player_pieces(player)]
         return {piece: self.valid_piece_moves(piece, validate, threats) for piece in pieces}
 
 
@@ -466,7 +466,7 @@ class Chess:
             yield move
         for w in relative_warps:
             warp = (coord[0] + w[0], coord[1] + w[1], threat)
-            if warp[0] in range(SIZE) and warp[1] in range(SIZE) and self.color(warp) not in excluded:
+            if warp[0] < 8 and warp[0] >= 0 and warp[1] < 8 and warp[1] >= 0 and self.color(warp) not in excluded:
                 yield warp
 
 
@@ -541,7 +541,7 @@ class Chess:
         inv_color = inverse_color(color)
         for offset in offsets_list:
             coord = (f + offset[1], r + offset[0], True)
-            while coord[0] in range(SIZE) and coord[1] in range(SIZE) and self.color(coord) in (inv_color, EMPTY):
+            while coord[0] < 8 and coord[0] >= 0 and coord[1] < 8 and coord[1] >= 0 and self.color(coord) in (inv_color, EMPTY):
                 yield coord
                 if self.color(coord) == inv_color:
                     break
