@@ -31,9 +31,7 @@ def file_to_index(file): return ord(file) - 97
 def index_to_file(index): return chr(index + 97)
 def rank_file_to_coord(to_rank_file): return (file_to_index(to_rank_file[0]), int(to_rank_file[1]) - 1)
 def coord_to_notation(coord): return index_to_file(coord[0]) + str(coord[1]+1)
-def in_range(coord): return coord[0] in range(SIZE) and coord[1] in range(SIZE)
 def inverse_color(color): return WHITE if color == BLACK else BLACK
-def map2(func, vals): return [func(val) for val in vals] #map with side effects
 def threatened_str(threatened):
     piece_arr = [str(threatened[coord[1]][SIZE - coord[0] - 1]) for coord in all_coords]
     return "".join([" ".join(piece_arr[i*SIZE:i*SIZE+SIZE])+"\n" for i in range(SIZE)])
@@ -74,7 +72,6 @@ class Chess:
     def __set_row(self, row, row_pieces):
         for col in range(SIZE):
             self.set_coord((col, row), pieces_index[row_pieces[col]])
-        #map2(lambda col: self.coord((col, row), pieces_index[row_pieces[col]]), [col for col in range(SIZE)])
 
 
     def init_player_pieces(self):
@@ -115,9 +112,8 @@ class Chess:
 
 
     def game_state(self):
-        #FIXME cache the result of this and invalidate the cache when a move is made
+        #FIXME cache threats and pass it to check_check
         #TODO threefold repetition and fifty move rule?
-        #FIXME check for impossible checkmate (king/king, king/bishop, king/knight, king/bishop v king/bishop of same color
         piece_moves = self.valid_moves_for_player(self.current_player, True)
         has_next_move = False
         for piece in piece_moves:
@@ -163,7 +159,7 @@ class Chess:
     def valid_piece_moves(self, p, validate=True, threats=None):
         p_type = self.board[p[1]][p[0]]
         p_type = p_type - 6 if p_type > 6 else p_type
-        funcs = [lambda: [], self.king, self.queen, self.rook, self.bishop, self.knight, self.pawn]
+        funcs = [lambda: [], self.__king, self.__queen, self.__rook, self.__bishop, self.__knight, self.__pawn]
         moves = funcs[p_type](p[0], p[1], threats) if p_type == 1 else funcs[p_type](p[0], p[1])
         if validate:
             player = self.current_player
@@ -220,7 +216,7 @@ class Chess:
                 if move[2]:
                     yield move
         for pawn in self.player_pieces_of_type("P", inverse_color(player)):
-            for threat in self.pawn_threats(pawn[0], pawn[1]):
+            for threat in self.__pawn_threats(pawn[0], pawn[1]):
                 yield threat
 
 
@@ -393,13 +389,13 @@ class Chess:
                 raise BadPromotionException("Invalid promotion")
 
 
-    def pawn_threats(self, f, r):
+    def __pawn_threats(self, f, r):
         color = self.color((f, r))
         for threat in self.__warps([], (f, r), pawn_capture_warps[color - 1], (color,)):
             yield threat
 
 
-    def pawn(self, f, r):
+    def __pawn(self, f, r):
         """Returns all valid moves for a pawn at file f and rank r including en pessant and valid promotions."""
         color = self.color((f, r))
         warps = [[(0, 1), (0, 2)] if r == 1 and self.color((f, r + 1)) == EMPTY else [(0, 1)]]
@@ -425,41 +421,40 @@ class Chess:
                         yield (last_move[0][0], r + 1, False, self.board[r][f])
 
 
-    def rook(self, f, r):
+    def __rook(self, f, r):
         """Returns all valid moves for a rook at file f and rank r."""
         return self.__orthogonal([], f, r)
 
 
-    def bishop(self, f, r):
+    def __bishop(self, f, r):
         """Returns all valid moves for a bishop at file f and rank r."""
         return self.__diagonal([], f, r)
 
 
-    def knight(self, f, r):
+    def __knight(self, f, r):
         """Returns all valid moves for a knight at file f and rank r."""
         return self.__warps([], (f, r), knight_warps, (self.color((f, r)),))
 
 
-    def queen(self, f, r):
+    def __queen(self, f, r):
         """Returns all valid moves for a queen at file f and rank r."""
         return self.__orthogonal(self.__diagonal([], f, r), f, r)
 
 
-    def king(self, f, r, threats=None):
+    def __king(self, f, r, threats=None):
         """Returns all valid moves for a king at file f and rank r including castling (does not allow king to move into check or checkmate)."""
         color = self.color((f, r))
         castle_moves = []
         if self.kings_moved[color - 1] == -1:
-            #if self.rooks_moved[0 if color == WHITE else 2] == -1 and self.positions_clear([(1, r), (2, r), (3, r)], threats): #king does not move through (1, r)?
-            if self.rooks_moved[0 if color == WHITE else 2] == -1 and self.positions_clear([(2, r), (3, r)], threats):
+            if self.rooks_moved[0 if color == WHITE else 2] == -1 and self.__positions_clear([(2, r), (3, r)], threats):
                     castle_moves.append((2, r, False))
-            if self.rooks_moved[1 if color == WHITE else 3] == -1 and self.positions_clear([(5, r), (6, r)], threats):
+            if self.rooks_moved[1 if color == WHITE else 3] == -1 and self.__positions_clear([(5, r), (6, r)], threats):
                 castle_moves.append((6, r, False))
         for move in self.__warps(castle_moves, (f, r), king_warps, (color,)):
             yield move
 
 
-    def positions_clear(self, coords, threats=None):
+    def __positions_clear(self, coords, threats=None):
         """
         Determines if all coordinates in coords list are clear of both pieces and threats.
 
