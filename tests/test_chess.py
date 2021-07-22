@@ -24,14 +24,14 @@ class TestChess(unittest.TestCase):
 
     def test_valid_pawn_moves(self):
         black_pawn_true_moves = [(0, 2, False), (0, 3, False)]
-        black_pawn_moves = list(self.board.__pawn(0, 1))
+        black_pawn_moves = list(self.board._Chess__pawn(0, 1))
         assert black_pawn_moves == black_pawn_true_moves
 
     def test_valid_promotion_moves(self):
         self.board.board = self.empty_board()
         self.board.board[6][4] = 6
         white_pawn_true_moves = [(4, 7, False, 'Q'), (4, 7, False, 'R'), (4, 7, False, 'B'), (4, 7, False, 'N')] 
-        white_pawn_moves = list(self.board.__pawn(4, 6))
+        white_pawn_moves = list(self.board._Chess__pawn(4, 6))
         assert white_pawn_moves == white_pawn_true_moves
 
     def test_valid_rook_moves(self):
@@ -39,7 +39,7 @@ class TestChess(unittest.TestCase):
         self.board.board[4][4] = 3
         true_moves = [(4, 5, True), (4, 6, True), (4, 7, True), (4, 3, True), (4, 2, True), (4, 1, True), (4, 0, True),
                       (5, 4, True), (6, 4, True), (7, 4, True), (3, 4, True), (2, 4, True), (1, 4, True), (0, 4, True)]
-        moves = list(self.board.__rook(4, 4))
+        moves = list(self.board._Chess__rook(4, 4))
         assert moves == true_moves
 
     def test_valid_bishop_moves(self):
@@ -47,7 +47,7 @@ class TestChess(unittest.TestCase):
         self.board.board[4][4] = 4
         true_moves = [(5, 5, True), (6, 6, True), (7, 7, True), (3, 3, True), (2, 2, True), (1, 1, True),
                       (0, 0, True), (3, 5, True), (2, 6, True), (1, 7, True), (5, 3, True), (6, 2, True), (7, 1, True)]
-        moves = list(self.board.__bishop(4, 4))
+        moves = list(self.board._Chess__bishop(4, 4))
         assert moves == true_moves
 
     #TODO test knight moves
@@ -59,7 +59,7 @@ class TestChess(unittest.TestCase):
                       (3, 5, True), (2, 6, True), (1, 7, True), (5, 3, True), (6, 2, True), (7, 1, True), (4, 5, True),
                       (4, 6, True), (4, 7, True), (4, 3, True), (4, 2, True), (4, 1, True), (4, 0, True), (5, 4, True),
                       (6, 4, True), (7, 4, True), (3, 4, True), (2, 4, True), (1, 4, True), (0, 4, True)]
-        moves = list(self.board.__queen(4, 4))
+        moves = list(self.board._Chess__queen(4, 4))
         assert moves == true_moves
 
     def test_valid_king_moves(self):
@@ -68,7 +68,7 @@ class TestChess(unittest.TestCase):
         self.board.kings_moved[0] = True
         true_moves = [(5, 5, True), (3, 3, True), (5, 3, True), (3, 5, True), (4, 5, True), (4, 3, True),
                       (5, 4, True), (3, 4, True)]
-        moves = list(self.board.__king(4, 4))
+        moves = list(self.board._Chess__king(4, 4))
         assert moves == true_moves
 
     def test_valid_king_moves_castle(self):
@@ -81,10 +81,10 @@ class TestChess(unittest.TestCase):
         self.board.board[7][7] = 9
         self.board.init_player_pieces()
         true_moves = [(2, 0, False), (6, 0, False), (5, 1, True), (3, 1, True), (4, 1, True), (5, 0, True), (3, 0, True)]
-        moves = list(self.board.__king(4, 0))
+        moves = list(self.board._Chess__king(4, 0))
         assert moves == true_moves
         true_moves = [(2, 7, False), (6, 7, False), (3, 6, True), (5, 6, True), (4, 6, True), (5, 7, True), (3, 7, True)]
-        moves = list(self.board.__king(4, 7))
+        moves = list(self.board._Chess__king(4, 7))
         assert moves == true_moves
         self.board.move((4, 0), (2, 0, False))
         assert self.board.fen() == "r3k2r/8/8/8/8/8/8/2KR3R b kq - 1 1"
@@ -104,10 +104,10 @@ class TestChess(unittest.TestCase):
         self.board.board = self.empty_board()
         self.board.board[4][4] = 1
         self.board.init_player_pieces()
-        assert not self.board.check_check(self.board.current_player)
+        assert not self.board.in_check(self.board.current_player)
         self.board.board[2][4] = 8
         self.board.init_player_pieces()
-        assert self.board.check_check(self.board.current_player)
+        assert self.board.in_check(self.board.current_player)
         #TODO check that non-threatening moves do not place king in check
 
     def test_captured(self):
@@ -133,6 +133,133 @@ class TestChess(unittest.TestCase):
         self.board.move((6, 6), (5, 5, True))
         self.board.move((3, 0), (7, 4, True))
         self.assertEqual(CHECKMATE, self.board.game_state())
+
+
+    def test_insufficient_material_1(self):
+        self.board.board = [
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 7, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+        ]
+        self.board.init_player_pieces()
+        self.assertEqual(DRAW, self.board.game_state())
+
+    def test_insufficient_material_2(self):
+        self.board.board = [
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 4, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 7, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 10, 0, 0, 0, 0, 0],
+        ]
+        self.board.init_player_pieces()
+        self.assertEqual(DRAW, self.board.game_state())
+
+    def test_insufficient_material_3(self):
+        self.board.board = [
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 7, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 10, 0, 0, 0, 0, 0],
+        ]
+        self.board.init_player_pieces()
+        self.assertEqual(DRAW, self.board.game_state())
+
+    def test_insufficient_material_4(self):
+        self.board.board = [
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 4, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 7, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+        ]
+        self.board.init_player_pieces()
+        self.assertEqual(DRAW, self.board.game_state())
+
+    def test_insufficient_material_5(self):
+        self.board.board = [
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 5, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 7, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 11, 0, 0, 0, 0, 0],
+        ]
+        self.board.init_player_pieces()
+        self.assertEqual(DRAW, self.board.game_state())
+
+    def test_insufficient_material_6(self):
+        self.board.board = [
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 7, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 11, 0, 0, 0, 0, 0],
+        ]
+        self.board.init_player_pieces()
+        self.assertEqual(DRAW, self.board.game_state())
+
+    def test_insufficient_material_7(self):
+        self.board.board = [
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 5, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 7, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+        ]
+        self.board.init_player_pieces()
+        self.assertEqual(DRAW, self.board.game_state())
+
+    def test_insufficient_material_8(self):
+        self.board.board = [
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 5, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 7, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 10, 0, 0, 0, 0, 0],
+        ]
+        self.board.init_player_pieces()
+        self.assertEqual(DRAW, self.board.game_state())
+
+    def test_insufficient_material_9(self):
+        self.board.board = [
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 4, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 7, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 11, 0, 0, 0, 0, 0],
+        ]
+        self.board.init_player_pieces()
+        self.assertEqual(DRAW, self.board.game_state())
 
     def empty_board(self):
         return [[0 for col in range(8)] for row in range(8)]

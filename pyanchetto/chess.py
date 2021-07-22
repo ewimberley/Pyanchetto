@@ -76,6 +76,7 @@ class Chess:
 
     def init_player_pieces(self):
         self.player_pieces_list = [{c for c in all_coords if self.color(c) == color} for color in (WHITE, BLACK)]
+        self.player_pieces_types = {}
 
 
     def set_coord(self, coord: tuple, piece):
@@ -111,37 +112,49 @@ class Chess:
         return self.player_pieces_list[player - 1]
 
 
+    def get_player_piece_types(self):
+        move_num = len(self.move_list)
+        if move_num not in self.player_pieces_types:
+            white_pieces = [self.board[p[1]][p[0]] for p in self.player_pieces(WHITE)]
+            white_pieces.sort()
+            black_pieces = [self.board[p[1]][p[0]] for p in self.player_pieces(BLACK)]
+            black_pieces.sort()
+            self.player_pieces_types[move_num] = [white_pieces, black_pieces]
+        return self.player_pieces_types[move_num][0], self.player_pieces_types[move_num][1]
+
+
     def game_state(self):
         #FIXME cache threats and pass it to check_check
         #TODO threefold repetition and fifty move rule?
+        num_pieces = len(self.player_pieces_list[0]) + len(self.player_pieces_list[1])
+        if num_pieces <= 4:
+            # check for sufficient material
+            white_pieces, black_pieces = self.get_player_piece_types()
+            if white_pieces == [1] and black_pieces == [7]:  # king v king
+                return DRAW
+            if white_pieces == [1, 4] and black_pieces == [7, 10]: # king bishop v king bishop
+                return DRAW
+            if white_pieces == [1] and black_pieces == [7, 10]:  # king v king bishop
+                return DRAW
+            if white_pieces == [1, 4] and black_pieces == [7]:  # king bishop v king
+                return DRAW
+            if white_pieces == [1, 5] and black_pieces == [7, 11]:  # king knight v king knight
+                return DRAW
+            if white_pieces == [1] and black_pieces == [7, 11]:  # king v king knight
+                return DRAW
+            if white_pieces == [1, 5] and black_pieces == [7]: # king knight v king
+                return DRAW
+            if white_pieces == [1, 5] and black_pieces == [7, 10]:  # king knight v king bishop
+                return DRAW
+            if white_pieces == [1, 4] and black_pieces == [7, 11]:  # king bishop v king knight
+                return DRAW
         piece_moves = self.valid_moves_for_player(self.current_player, True)
         has_next_move = False
         for piece in piece_moves:
             has_next_move = has_next_move or (next(piece_moves[piece], None) is not None)
-        check = self.check_check(self.current_player)
+        check = self.in_check(self.current_player)
         if not has_next_move:
             return CHECKMATE if check else STALEMATE
-            # check for sufficient material
-            white_set = set(self.player_pieces(WHITE))
-            black_set = set(self.player_pieces(BLACK))
-            if white_set == set({1}) and black_set == set({7}):  # king v king
-                return DRAW
-            if white_set == set({1, 4}) and black_set == set({7, 10}):  # king bishop v king bishop
-                return DRAW
-            if white_set == set({1}) and black_set == set({7, 10}):  # king v king bishop
-                return DRAW
-            if white_set == set({1, 4}) and black_set == set({7}):  # king bishop v king
-                return DRAW
-            if white_set == set({1, 5}) and black_set == set({7, 11}):  # king knight v king knight
-                return DRAW
-            if white_set == set({1}) and black_set == set({7, 11}):  # king v king knight
-                return DRAW
-            if white_set == set({1, 5}) and black_set == set({7}):  # king knight v king
-                return DRAW
-            if white_set == set({1, 5}) and black_set == set({7, 10}):  # king knight v king bishop
-                return DRAW
-            if white_set == set({1, 4}) and black_set == set({7, 11}):  # king bishop v king knight
-                return DRAW
         return CHECK if check else NORMAL
 
 
@@ -159,14 +172,14 @@ class Chess:
     def valid_piece_moves(self, p, validate=True, threats=None):
         p_type = self.board[p[1]][p[0]]
         p_type = p_type - 6 if p_type > 6 else p_type
-        funcs = [lambda: [], self.__king, self.__queen, self.__rook, self.__bishop, self.__knight, self.__pawn]
+        funcs = [lambda f, r: [], self.__king, self.__queen, self.__rook, self.__bishop, self.__knight, self.__pawn]
         moves = funcs[p_type](p[0], p[1], threats) if p_type == 1 else funcs[p_type](p[0], p[1])
         if validate:
             player = self.current_player
             for move in moves: #simulate to prevent moving into check
                 try:
                     self.move(p, move, False, False)
-                    if not self.check_check(player):
+                    if not self.in_check(player, threats=threats):
                         self.__undo_last_move()
                         yield move
                     else:
@@ -220,18 +233,18 @@ class Chess:
                 yield threat
 
 
-    def check_check(self, player, threats=None):
+    def in_check(self, player, threats=None):
         """
         Determines if a player is currently in check.
         A precomputed threat matrix can be provided as an optimization.
         """
-        #XXX can we use the optimized threats function to just check the king square?
+        k = list(self.player_pieces_of_type("K", player))[0]
         threats = self.__compute_threats(player) if threats is None else threats
-        king = list(self.player_pieces_of_type("K", player))
-        return (king[0][0], king[0][1], True) in threats
+        return (k[0], k[1], True) in threats
 
 
     def move(self, fromc, to, validate=True, pgn_gen=True):
+        threats = None
         if validate:
             threats = self.compute_threat_matrix(self.current_player) if self.is_type(fromc, "K") else None
             valid_moves = self.valid_piece_moves(fromc, True, threats) if self.color(fromc) == self.current_player else {}
@@ -239,7 +252,7 @@ class Chess:
             #valid_moves = list(valid_moves)
         if not validate or to in valid_moves:
             if pgn_gen and validate:
-                self.__append_move_to_pgn(fromc, pgn_gen, to, validate)
+                self.__append_move_to_pgn(fromc, pgn_gen, to, validate, threats)
             if self.is_type(fromc, "R") and fromc in rook_positions_index:
                 rook_index = rook_positions_index[fromc]
                 if self.rooks_moved[rook_index] == -1:
@@ -268,7 +281,7 @@ class Chess:
             raise BadMoveException("Move is invalid")
 
 
-    def __append_move_to_pgn(self, fromc, pgn_gen, to, validate):
+    def __append_move_to_pgn(self, fromc, pgn_gen, to, validate, threats):
         pgn_castle, pgn_promotion, file_disambiguation, rank_disambiguation = None, "", "", ""
         if self.is_type(fromc, "K") and fromc in king_positions:
             if to in king_castle_end_positions:
@@ -284,7 +297,7 @@ class Chess:
             # TODO piece disambiguation if same type of piece can move to to_coord
             for piece in self.__type_in_coords(self.player_pieces_list[self.current_player - 1], piece_type):
                 if self.board[piece[1]][piece[0]] == piece_type and piece != fromc:
-                    for move in self.valid_piece_moves(piece):
+                    for move in self.valid_piece_moves(piece, threats=threats):
                         if move == to:
                             if piece[0] == fromc[0]:
                                 rank_disambiguation = str(fromc[1] + 1)
