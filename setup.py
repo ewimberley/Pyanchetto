@@ -8,7 +8,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(name='pyanchetto',
-      version='0.2.3',
+      version='0.3.0',
       description='A python chess engine.',
       author='Eric Wimberley',
       packages=['pyanchetto'],
