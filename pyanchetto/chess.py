@@ -44,7 +44,7 @@ class BadPromotionException(Exception):
 
 class Chess:
 
-    def __init__(self, other=None):
+    def __init__(self, other=None, white_agent=None, black_agent=None):
         if other is not None:
             self.board = [[other.board[row][col] for col in range(SIZE)] for row in range(SIZE)]
             self.rooks_moved = copy.deepcopy(other.rooks_moved)
@@ -56,6 +56,8 @@ class Chess:
             self.captured_pieces = copy.deepcopy(other.captured_pieces)
             self.promoted_pieces = copy.deepcopy(other.promoted_pieces)
             self.player_pieces_list = copy.deepcopy(other.player_pieces_list)
+            self.player_pieces_types = copy.deepcopy(other.player_pieces_types)
+            self.white_agent, self.black_agent = other.white_agent, other.black_agent
         else:
             self.board = [[0 for col in range(SIZE)] for row in range(SIZE)]
             self.rooks_moved, self.kings_moved, self.kings_castled = [-1, -1, -1, -1], [-1, -1], [-1, -1]
@@ -66,7 +68,12 @@ class Chess:
             self.__set_row(1, ["P"] * 8)
             self.__set_row(6, ["p"] * 8)
             self.__set_row(7, [p.lower() for p in home_row])
+            self.white_agent, self.black_agent = white_agent, black_agent
             self.init_player_pieces()
+            if self.white_agent:
+                self.white_agent.set_board(self)
+            if self.black_agent:
+                self.black_agent.set_board(self)
 
 
     def __set_row(self, row, row_pieces):
@@ -120,13 +127,12 @@ class Chess:
             black_pieces = [self.board[p[1]][p[0]] for p in self.player_pieces(BLACK)]
             black_pieces.sort()
             self.player_pieces_types[move_num] = [white_pieces, black_pieces]
-        return self.player_pieces_types[move_num][0], self.player_pieces_types[move_num][1]
+        return self.player_pieces_types[move_num][WHITE-1], self.player_pieces_types[move_num][BLACK-1]
 
 
     def game_state(self):
-        #FIXME cache threats and pass it to check_check
         #TODO threefold repetition and fifty move rule?
-        num_pieces = len(self.player_pieces_list[0]) + len(self.player_pieces_list[1])
+        num_pieces = len(self.player_pieces_list[WHITE-1]) + len(self.player_pieces_list[BLACK-1])
         if num_pieces <= 4:
             # check for sufficient material
             white_pieces, black_pieces = self.get_player_piece_types()
@@ -178,8 +184,9 @@ class Chess:
             player = self.current_player
             for move in moves: #simulate to prevent moving into check
                 try:
-                    self.move(p, move, False, False)
-                    if not self.in_check(player, threats=threats):
+                    self.move(p, move, False, False, False)
+                    #if not self.in_check(player, threats=threats):
+                    if not self.in_check(player):
                         self.__undo_last_move()
                         yield move
                     else:
@@ -233,17 +240,27 @@ class Chess:
                 yield threat
 
 
-    def in_check(self, player, threats=None):
+    def in_check(self, player):
         """
         Determines if a player is currently in check.
         A precomputed threat matrix can be provided as an optimization.
         """
         k = list(self.player_pieces_of_type("K", player))[0]
-        threats = self.__compute_threats(player) if threats is None else threats
+        threats = self.__compute_threats(player)
         return (k[0], k[1], True) in threats
 
+    def agent_move(self):
+        fromc, to = None, None
+        if self.current_player == WHITE:
+            if self.white_agent:
+                fromc, to = self.white_agent.get_move()
+        else:
+            if self.black_agent:
+                fromc, to = self.black_agent.get_move()
+        if fromc:
+            self.move(fromc, to)
 
-    def move(self, fromc, to, validate=True, pgn_gen=True):
+    def move(self, fromc, to, validate=True, pgn_gen=True, notify=True):
         threats = None
         if validate:
             threats = self.compute_threat_matrix(self.current_player) if self.is_type(fromc, "K") else None
@@ -251,6 +268,10 @@ class Chess:
             #below line used for debugging valid moves only
             #valid_moves = list(valid_moves)
         if not validate or to in valid_moves:
+            if notify and self.white_agent:
+                self.white_agent.notify_move((fromc, to))
+            if notify and self.black_agent:
+                self.black_agent.notify_move((fromc, to))
             if pgn_gen and validate:
                 self.__append_move_to_pgn(fromc, pgn_gen, to, validate, threats)
             if self.is_type(fromc, "R") and fromc in rook_positions_index:
