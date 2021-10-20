@@ -11,11 +11,11 @@ class AIPlayer(Player):
         super().set_board(board)
 
     def get_move(self):
-        self.analyzer = ChessAnalyzer(self.board, self.heuristic)
         if self.board.current_player != self.color:
             return None, None
-        self.analyzer.analyze(levels=3)
-        best_node = self.analyzer.current_node.best_child
+        analyzer = ChessAnalyzer(self.board, self.heuristic)
+        analyzer.analyze(levels=4)
+        best_node = analyzer.current_node.best_child
         if best_node is None:
             print("")
         return best_node.move
@@ -23,4 +23,3 @@ class AIPlayer(Player):
 
     def notify_move(self, move):
         pass
-        #self.analyzer.apply_move(move)

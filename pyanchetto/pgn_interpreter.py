@@ -26,7 +26,7 @@ class ChessInterpreter():
         self.termination_marker = None
         self.metadata_map = {}
 
-    def execute(self, tree, verbose):
+    def execute(self, tree, verbose, metadata_only=False):
         """
         Play the game represented by the abstract syntax tree of a PGN string.
 
@@ -36,6 +36,7 @@ class ChessInterpreter():
 
         verbose: log debug information and intermediate board positions if true
         """
+        self.metadata_only = metadata_only
         self.fens.append(self.board.fen())
         self.captured.append(self.board.get_captured_pieces())
         self.verbose = verbose
@@ -49,7 +50,7 @@ class ChessInterpreter():
 
     def __pgn(self, tree):
         for child in tree.children:
-            if child.data == "turn":
+            if child.data == "turn" and not self.metadata_only:
                 self.__move(child)
             elif child.data == "metadata":
                 self.__metadata(child)

@@ -21,6 +21,7 @@ class MaterialHeuristic(Hueristic):
         #castle
         #development
         #linked knights or other reinforcements
+        #don't go in a loop
         #threats matrix
         #doubled pawns
         w, b = self.material(board)
