@@ -171,7 +171,7 @@ class Chess:
 
 
     def valid_moves_for_player(self, player, validate=True, threats=None):
-        pieces = [p for p in self.player_pieces(player)]
+        pieces = self.player_pieces(player)
         return {piece: self.valid_piece_moves(piece, validate, threats) for piece in pieces}
 
 

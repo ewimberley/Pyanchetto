@@ -5,8 +5,9 @@ from ai.ai_player import *
 from ai.material_heuristic import *
 
 def main(args):
-    white = AIPlayer(WHITE, MaterialHeuristic())
-    black = AIPlayer(BLACK, MaterialHeuristic())
+    move_dict = pickle.load(open('ai/2000elo.dict', "rb"))
+    white = AIPlayer(WHITE, MaterialHeuristic(), move_dict)
+    black = AIPlayer(BLACK, MaterialHeuristic(), move_dict)
     board = Chess(white_agent=white, black_agent=black)
     state = board.game_state()
     print(board)

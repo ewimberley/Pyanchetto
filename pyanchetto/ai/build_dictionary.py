@@ -9,6 +9,10 @@ from pyanchetto.chess import Chess
 from pyanchetto.pgn_interpreter import ChessInterpreter
 from pyanchetto.pgn_parser import parse_notation
 
+def collapse_fen(fen):
+    parts = fen.split(' ')
+    return " ".join([parts[0], parts[1]])
+
 def new_game(file_name, move_dictionary):
     with open(file_name, 'r') as f:
         pgn = f.read()
@@ -43,17 +47,18 @@ def new_game(file_name, move_dictionary):
         ply = int(interpreter.metadata_map["PlyCount"])
         if int(white_elo) > 2000 or int(black_elo) > 2000:
             board_result = interpreter.board.game_state()
-            print(f"{white_player}: {white_elo}\t{black_player}:{black_elo}")
+            #print(f"{white_player}: {white_elo}\t{black_player}:{black_elo}")
             interpreter.execute(tree, False)
             board_result = interpreter.board.game_state()
             for i in range(1, len(interpreter.fens)-1):
-                fen = interpreter.fens[i]
-                next = interpreter.fens[i+1]
+                fen = collapse_fen(interpreter.fens[i])
+                #next = collapse_fen(interpreter.fens[i+1])
+                move = interpreter.moves[i-1]
                 if fen not in move_dictionary:
                     move_dictionary[fen] = {}
-                if next not in move_dictionary[fen]:
-                    move_dictionary[fen][next] = 0
-                move_dictionary[fen][next] += 1
+                if move not in move_dictionary[fen]:
+                    move_dictionary[fen][move] = 0
+                move_dictionary[fen][move] += 1
 
 
 def ingest(path):
@@ -63,8 +68,10 @@ def ingest(path):
     failures = []
     move_dictionary = {}
     for filename in os.listdir(path):
-        if on_file == 2000:#1000000:
+        if on_file == 70000:#1000000:
             break
+        if (on_file % 100) == 0:
+            print(f"File number: {on_file}")
         try:
             on_file += 1
             if filename.endswith(".pgn"):

@@ -21,6 +21,7 @@ class ChessInterpreter():
             self.board = Chess()
         self.turn_number = 0
         self.verbose = False
+        self.moves = []
         self.fens = []
         self.captured = []
         self.termination_marker = None
@@ -121,6 +122,7 @@ class ChessInterpreter():
         try:
             logging.debug("Player " + str(self.board.current_player) + " moving " + self.piece + " to " + str(self.to_coord))
             logging.debug(f"Move: {from_coord}, {self.to_coord}")
+            self.moves.append((from_coord, self.to_coord))
             self.board.move(from_coord, self.to_coord)
             logging.info("\n" + str(self.board))
         except Exception as e:
