@@ -1,4 +1,5 @@
 import sys
+import pickle
 
 from chess import *
 from ai.ai_player import *

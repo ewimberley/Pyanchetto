@@ -1,7 +1,4 @@
-import pickle
-
-from player import Player
-from chess import *
+from ai.player import Player
 from .analyzer import *
 
 def collapse_fen(fen):
