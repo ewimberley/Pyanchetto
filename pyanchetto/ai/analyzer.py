@@ -3,7 +3,7 @@ import traceback
 
 from pyanchetto.chess import Chess, NORMAL, CHECK, CHECKMATE, STALEMATE, WHITE, BLACK
 from pyanchetto.move_tree import *
-from ai.material_heuristic import MaterialHeuristic, piece_values
+from pyanchetto.ai.material_heuristic import MaterialHeuristic, piece_values
 
 class ChessAnalyzer:
     

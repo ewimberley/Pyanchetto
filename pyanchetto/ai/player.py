@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
-from chess import *
-from ai.analyzer import *
+from pyanchetto.chess import *
+from pyanchetto.ai.analyzer import *
 
 class Player(ABC):
     def __init__(self, color):
