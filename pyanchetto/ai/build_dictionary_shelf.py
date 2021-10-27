@@ -1,9 +1,4 @@
-import os
-import sys
-import logging
-import traceback
-import uuid
-import pickle
+import os, sys, logging, traceback, pickle, shelve
 
 from pyanchetto.chess import Chess
 from pyanchetto.pgn_interpreter import ChessInterpreter
@@ -13,7 +8,7 @@ def collapse_fen(fen):
     parts = fen.split(' ')
     return " ".join([parts[0], parts[1]])
 
-def new_game(file_name, move_dictionary, moves_w_freq_ge_ten):
+def new_game(file_name, move_dictionary):
     with open(file_name, 'r') as f:
         pgn = f.read()
         board = Chess()
@@ -56,16 +51,12 @@ def new_game(file_name, move_dictionary, moves_w_freq_ge_ten):
                 move = interpreter.moves[i-1]
                 if fen not in move_dictionary:
                     move_dictionary[fen] = {}
-                    moves_w_freq_ge_ten[fen] = 0
-                if moves_w_freq_ge_ten[fen] <= 5:
-                    if move not in move_dictionary[fen]:
-                        move_dictionary[fen][move] = 0
-                    move_dictionary[fen][move] += 1
-                    if move_dictionary[fen][move] == 10:
-                        moves_w_freq_ge_ten[fen] += 1
-                else:
-                    filtered = {move:move_dictionary[fen][move] for move in move_dictionary[fen] if move_dictionary[fen][move] >= 10}
-                    move_dictionary[fen] = filtered
+                    fen_moves = move_dictionary[fen]
+                    if move not in fen_moves:
+                        fen_moves[move] = 1
+                    else:
+                        fen_moves[move] += 1
+                    move_dictionary[fen] = fen_moves
             return True
         else:
             return False
@@ -77,21 +68,22 @@ def ingest(path):
     last_success = 0
     fail = 0
     failures = []
-    move_dictionary = {}
-    moves_w_freq_ge_ten = {}
+    #move_dictionary = {}
+    move_dictionary = shelve.open('2000elo.dict')
     for filename in os.listdir(path):
         #if on_file == 80000:#200000:#1000000:
         #    break
-        if success == 10000:
-            break
-        if (success % 10) == 0 and success != last_success:
-            print(f"File number: {success}")
+        if (success % 100) == 0 and success != last_success:
+            print(f"File number: {on_file}\tSuccesses: {success}")
+            move_dictionary.sync()
             last_success = success
+        if success == 400000:
+            break
         try:
             on_file += 1
             if filename.endswith(".pgn"):
                 #print(f"{on_file}: {filename}")
-                used_game = new_game(path + '/' + filename, move_dictionary, moves_w_freq_ge_ten)
+                used_game = new_game(path + '/' + filename, move_dictionary)
                 if used_game:
                     success += 1
         except Exception as e:
@@ -101,12 +93,13 @@ def ingest(path):
             fail += 1
     print(f"Successes: {success}\t Failures: {fail}")
     print(f"Keys: {len(move_dictionary.keys())}")
-    pickle.dump(move_dictionary, open("2000elo.dict", "wb"))
+    #pickle.dump(move_dictionary, open("2000elo.dict", "wb"))
     keylist = list(move_dictionary.keys())
     for i in range(40):
         frm = keylist[i]
         print(f"{frm}: {move_dictionary[frm]}")
     print(failures)
+    move_dictionary.close()
 
 def main(args):
     path = args[1]
