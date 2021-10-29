@@ -54,11 +54,10 @@ def new_game(file_name, move_dictionary):
                 fen_moves = move_dictionary[fen]
                 if move not in fen_moves:
                     fen_moves[move] = 1
-                    move_dictionary.sync()
                 else:
                     fen_moves[move] += 1
-                    move_dictionary[fen] = fen_moves
-                    move_dictionary.sync()
+                move_dictionary[fen] = fen_moves
+                move_dictionary.sync()
             return True
         else:
             return False
@@ -79,7 +78,7 @@ def ingest(path):
             print(f"File number: {on_file}\tSuccesses: {success}")
             move_dictionary.sync()
             last_success = success
-        if success == 5000:
+        if success == 300:
             break
         try:
             on_file += 1
