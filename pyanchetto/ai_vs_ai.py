@@ -1,16 +1,21 @@
 import sys
-import pickle
 import shelve
 
-from chess import *
 from ai.ai_player import *
-from ai.material_heuristic import *
+from ai.heuristics.material_heuristic import *
+from ai.priority_heuristics.piece_priority_heuristic import *
+from ai.priority_heuristics.dict_priority_heuristic import *
+from ai.ensemble_priority_heuristic import *
+from ai.ensemble_heuristic import *
+from ai.heuristics.misc_heuristic import *
 
 def main(args):
     #move_dict = pickle.load(open('ai/2000elo.dict', "rb"))
     move_dict = shelve.open('ai/2000elo.dict', flag='r')
-    white = AIPlayer(WHITE, MaterialHeuristic(), move_dict)
-    black = AIPlayer(BLACK, MaterialHeuristic(), move_dict)
+    priority = EnsemblePriorityHeuristic([PiecePriorityHeuristic(), DictPriorityHeuristic(move_dict)], [0.8, 0.2])
+    heuristic = EnsembleHeuristic([MaterialHeuristic(), MiscHeuristic()], [0.9, 0.1])
+    white = AIPlayer(WHITE, heuristic, priority, move_dict)
+    black = AIPlayer(BLACK, heuristic, priority, move_dict)
     board = Chess(white_agent=white, black_agent=black)
     state = board.game_state()
     print(board)

@@ -1,17 +1,19 @@
 import math
 import traceback
 
-from pyanchetto.chess import Chess, NORMAL, CHECK, CHECKMATE, STALEMATE, WHITE, BLACK
+from pyanchetto.chess import Chess
 from pyanchetto.move_tree import *
-from pyanchetto.ai.material_heuristic import MaterialHeuristic, piece_values
+from ai.heuristics.material_heuristic import MaterialHeuristic
+
 
 class ChessAnalyzer:
     
-    def __init__(self, board, heuristic):
+    def __init__(self, board, quality_heuristic, priority_heuristic):
         self.tree = MoveTree("Root")
         self.current_node = self.tree
         self.tree.board = board
-        self.heuristic = heuristic
+        self.heuristic = quality_heuristic
+        self.priority_heuristic = priority_heuristic
         self.fen_set = set()
         self.pruned = []
         self.nodes_searched = 0
@@ -120,7 +122,7 @@ class ChessAnalyzer:
             for move in piece_moves[piece]:
                 moves.append((piece, move))
         def sort_key(x):
-            return piece_values[board.get_coord(x[0])]
+            return self.priority_heuristic.compute_heuristic(x, board)
         moves.sort(reverse=True, key=sort_key)
         return moves
 

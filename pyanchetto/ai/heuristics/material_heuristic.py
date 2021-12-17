@@ -1,5 +1,5 @@
 from pyanchetto.chess import Chess, NORMAL, CHECK, CHECKMATE, STALEMATE, WHITE, BLACK
-from .heuristic import Hueristic
+from pyanchetto.ai.heuristic import Hueristic
 
 piece_values = (0, 100, 9, 5, 3, 3, 1, 100, 9, 5, 3, 3, 1)
 

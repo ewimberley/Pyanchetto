@@ -652,6 +652,11 @@ class Chess:
         return "".join(hash)
 
 
+    def collapsed_fen(self):
+        parts = self.fen().split(' ')
+        return " ".join([parts[0], parts[1]])
+
+
     def __get_full_move_clock(self):
         return math.floor(len(self.move_list) / 2) + 1
 
