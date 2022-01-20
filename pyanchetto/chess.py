@@ -87,15 +87,17 @@ class Chess:
 
 
     def set_coord(self, coord: tuple, piece):
+        """Sets the piece at a location in the format (f, r)"""
         self.board[coord[1]][coord[0]] = piece
 
 
     def get_coord(self, coord: tuple):
+        """Returns the piece at a location in the format (f, r)"""
         return self.board[coord[1]][coord[0]]
 
 
     def color(self, coord: tuple):
-        """Returns the color of the piece at a location (or the EMPTY color if no piece is at that location)."""
+        """Returns the color of the piece at a location in the format (f, r) (or the EMPTY color if no piece is at that location)."""
         piece_type = self.board[coord[1]][coord[0]]
         if piece_type == EMPTY:
             return EMPTY
@@ -626,14 +628,14 @@ class Chess:
         hash.append(" w " if self.current_player == WHITE else " b ")
         hash_len = len(hash)
         if self.kings_moved[0] == -1:
-            if self.rooks_moved[0] == -1:
-                hash.append("K")
             if self.rooks_moved[1] == -1:
+                hash.append("K")
+            if self.rooks_moved[0] == -1:
                 hash.append("Q")
         if self.kings_moved[1] == -1:
-            if self.rooks_moved[2] == -1:
-                hash.append("k")
             if self.rooks_moved[3] == -1:
+                hash.append("k")
+            if self.rooks_moved[2] == -1:
                 hash.append("q")
         if len(hash) == hash_len: #nothing new appeneded for castling
             hash.append("-")

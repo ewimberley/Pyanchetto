@@ -140,6 +140,6 @@ class TestInterpreter(unittest.TestCase):
 
     def test_game_ambiguous(self):
         pgn = "1. Nc3 Nf6  2. Nf3 Nc6  3. Nh4 Nb4  4. Nf5 Rg8  5. Ne3 Rh8  6. Ned5"
-        correct_hash = "r1bqkb1r/pppppppp/5n2/3N4/1n6/2N5/PPPPPPPP/R1BQKB1R b KQk - 11 6"
+        correct_hash = "r1bqkb1r/pppppppp/5n2/3N4/1n6/2N5/PPPPPPPP/R1BQKB1R b KQq - 11 6"
         self.simple_game_test(pgn, correct_hash)
         assert self.board.game_state() == NORMAL
