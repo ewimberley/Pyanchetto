@@ -52,6 +52,7 @@ class Chess:
             self.kings_castled = copy.deepcopy(other.kings_castled)
             self.current_player = other.current_player
             self.move_list = copy.deepcopy(other.move_list)
+            self.moved_piece_types = copy.deepcopy(other.moved_piece_types)
             self.pgn_str = copy.deepcopy(other.pgn_str)
             self.captured_pieces = copy.deepcopy(other.captured_pieces)
             self.promoted_pieces = copy.deepcopy(other.promoted_pieces)
@@ -62,7 +63,7 @@ class Chess:
             self.board = [[0 for col in range(SIZE)] for row in range(SIZE)]
             self.rooks_moved, self.kings_moved, self.kings_castled = [-1, -1, -1, -1], [-1, -1], [-1, -1]
             self.current_player = 1
-            self.move_list, self.pgn_str = [], []
+            self.move_list, self.moved_piece_types, self.pgn_str = [], [], []
             self.captured_pieces, self.promoted_pieces = {}, {}
             self.__set_row(0, home_row)
             self.__set_row(1, ["P"] * 8)
@@ -295,6 +296,7 @@ class Chess:
                         self.kings_castled[king_index] = on_move
             self.__move_piece(fromc, to)
             self.move_list.append((fromc, (to[0], to[1])))
+            self.moved_piece_types.append(self.board[to[1]][to[0]])
             if len(to) == 4:
                 self.__handle_special(fromc, to)
             self.current_player = inverse_color(self.current_player)
@@ -376,14 +378,16 @@ class Chess:
 
     def __undo_last_move(self):
         last_move = self.move_list.pop()
-        last_move_type = self
+        last_move_type = self.moved_piece_types.pop()
         last_move_index = len(self.move_list)
         captured = self.captured_pieces.pop(last_move_index, None)
         self.current_player = inverse_color(self.current_player)
-        if self.is_type(last_move[1], "R") and last_move[0] in rook_positions:
+        #if self.is_type(last_move[1], "R") and last_move[0] in rook_positions:
+        if (last_move_type == 3 or last_move_type == 9) and last_move[0] in rook_positions:
             if self.rooks_moved[rook_positions_index[last_move[0]]] == last_move_index:
                 self.rooks_moved[rook_positions_index[last_move[0]]] = -1
-        elif self.is_type(last_move[1], "K") and last_move[0] in king_positions:
+        #elif self.is_type(last_move[1], "K") and last_move[0] in king_positions:
+        elif (last_move_type == 1 or last_move_type == 7) and last_move[0] in king_positions:
             if self.kings_moved[king_positions.index(last_move[0])] == last_move_index:
                 self.kings_moved[king_positions.index(last_move[0])] = -1
                 king_pos = (last_move[1][0], last_move[1][1], False)
@@ -614,17 +618,7 @@ class Chess:
     def fen(self):
         """Return the FEN hash string for the current state of the game."""
         hash = []
-        for i, coord in enumerate(all_coords):
-            p_type = self.get_coord((coord[1], SIZE - coord[0] - 1))
-            if i % 8 == 0 and i > 0:
-                hash.append("/")
-            if p_type == EMPTY:
-                if len(hash) > 0 and hash[-1] in ("1", "2", "3", "4", "5", "6", "7", "8"):
-                    hash[-1] = str(int(hash[-1]) + 1)
-                else:
-                    hash.append("1")
-            else:
-                hash.append(pieces[p_type])
+        hash.append(self.board_fen())
         hash.append(" w " if self.current_player == WHITE else " b ")
         hash_len = len(hash)
         if self.kings_moved[0] == -1:
@@ -654,9 +648,24 @@ class Chess:
         return "".join(hash)
 
 
+    def board_fen(self):
+        hash = []
+        for i, coord in enumerate(all_coords):
+            p_type = self.get_coord((coord[1], SIZE - coord[0] - 1))
+            if i % 8 == 0 and i > 0:
+                hash.append("/")
+            if p_type == EMPTY:
+                if len(hash) > 0 and hash[-1] in ("1", "2", "3", "4", "5", "6", "7", "8"):
+                    hash[-1] = str(int(hash[-1]) + 1)
+                else:
+                    hash.append("1")
+            else:
+                hash.append(pieces[p_type])
+        return "".join(hash)
+
+
     def collapsed_fen(self):
-        parts = self.fen().split(' ')
-        return " ".join([parts[0], parts[1]])
+        return self.board_fen() + " w" if self.current_player == WHITE else " b"
 
 
     def __get_full_move_clock(self):
@@ -664,6 +673,7 @@ class Chess:
 
 
     def __get_half_move_clock(self):
+        # XXX when this gets to 100, game state is a draw
         move_index = len(self.move_list)
         if move_index > 0:
             last_cap_or_pawn = move_index
